@@ -1,0 +1,46 @@
+Name: Simulation_1
+Comments: Configuration for HESS optimization
+Timeseries:
+  Input_File: path/to/timeseries.csv
+Execution:
+  Real_Time: false
+  End_Time: 86400
+  Minimum_Resolution: 3600
+  TimePeriods: 24
+  dt: 1
+Electrical_Storage_Units:
+  ESS_A:
+    Available_Capacity: 100
+    Available_Power: 50
+    Min_Limit_Power: 5
+    Max_Limit_Power: 100
+    Eta_ch: 0.95
+    Eta_dis: 0.95
+    Static: 0.01
+    Initial_SOC: 0.5
+    Maximum_SOC: 1.0
+    Minimum_SOC: 0.2
+    Loss_coef_a: 0.001
+    Loss_coef_b: 0.002
+Thermal_Storage_Units:
+  TA:
+    Available_Capacity: 100
+    Available_Power: 30
+    Eta_ch: 0.9
+    Eta_dis: 0.9
+    Initial_SOC: 0.5
+    Gamma: 0.01
+    Loss_coef_a: 0.001
+    Loss_coef_b: 0.002
+Converters:
+  RC:
+    Eta_RC: 0.7
+General:
+  pLoad: []
+  qDemand: []
+  pImp_max: []
+  pExp_max: []
+  qImp_max: []
+  qExp_max: []
+  HeatPrice: []
+  EnPrice: []

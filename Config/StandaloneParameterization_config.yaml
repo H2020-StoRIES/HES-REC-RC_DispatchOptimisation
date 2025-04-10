@@ -1,0 +1,39 @@
+Name: User Configuration for Standalone Parameterization
+Comments: Is a subset of Sizing Tool config files as only parameters relevant to Standalone Parameterization are listed.
+
+
+### PARAMETERIZATION SETTINGS ###
+Sizing_Params:
+    Num_freq_days: 1  # Number of representative daily frequency time series used in the simulation of one day
+    Parameterization_granularity: 8  # Number of pRt values in the pRt range used for calc. loss & degr.cost coefficients
+    Frequency_day_weighting: [ 0.99,  # Occurrence weights for representative daily frequency time series
+                               0.01,  # Must match order of frequency files in InputData/Frequency (frequency_day1.csv,...)
+                               0,  # Must sum up to 1
+                               0, ]  # Must be larger or equal Num_freq_days
+
+Controller:
+  Class: "controllers.SizingToolController"  # Defines the controller which manages operation of storage units in simulation
+  Parameters:  # Put static (i.e. not iterated) controller parameters here.
+
+Storage_Units:
+  - Lithium_Battery:
+      Deg_cost_per_kWh: 1000  # Cost for capacity degradation [€/kWh]
+      Implementation: "simulators.NMCBatteryFirstLife"  # Model used in simulation
+      Unit_Specific_Parameters:
+        L_total: 0  # Current lifetime (0=new, 0.1=10% lifetime passed, ...)
+      Available_Capacity: 1  # Initial energy capacity [kWh]
+      Available_Power: 1  # Initial power capacity [kW]
+      Maximum_SOC: 90  # Maximum allowed SOC [%]
+      Minimum_SOC: 10  # Minimum allowed SOC [%]
+  - Super_Capacitor:
+      Implementation: "simulators.SuperCapacitor"  # Model used in simulation
+      Available_Capacity: 0.5  # Initial energy capacity [kWh]
+      Available_Power: 1  # Initial power capacity [kW]
+      Maximum_SOC: 90  # Maximum allowed SOC [%]
+      Minimum_SOC: 10  # Minimum allowed SOC [%]
+  - Vanadium_Battery:
+      Implementation: "simulators.VanadiumBattery"  # Model used in simulation
+      Available_Capacity: 1  # Initial energy capacity [kWh]
+      Available_Power: 1  # Initial power capacity [kW]
+      Maximum_SOC: 90  # Maximum allowed SOC [%]
+      Minimum_SOC: 10  # Minimum allowed SOC [%]
