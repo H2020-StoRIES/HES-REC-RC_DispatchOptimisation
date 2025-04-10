@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 0da2bc078a3be0cb99786cad5795227c10caf86b
 import numpy as np
 from scipy.optimize import curve_fit
 import requests
@@ -13,8 +16,11 @@ import csv
 import time
 from pyomo.environ import *
 import pyomo.environ as pyo
+<<<<<<< HEAD
 import yaml
 
+=======
+>>>>>>> 0da2bc078a3be0cb99786cad5795227c10caf86b
 pd.set_option('display.max_columns', None)
 
 ### Parameters ###
@@ -353,6 +359,7 @@ def Parameterization(config, standalone=False):
     ### Fit functions to get coefficients for losses, degradation cost and service delivery fraction ###
 
     # Repeat each pRt value by the number of frequency time series days
+<<<<<<< HEAD
     # pRt_range = [r for r in pRt_range for _ in range(Num_freq_days)]
     # # Repeat each pRt value by the occurrence of each frequency time series day
     # pRt_range = [pRt for pRt, count in zip(pRt_range, Sorted_and_selected_frequency_day_occurrences * len(pRt_range)) for _ in range(count)]
@@ -389,6 +396,44 @@ def Parameterization(config, standalone=False):
     # else:
 
     #     return pRt_range, loss_coefficients, deg_cost_coefficients, delivery_fraction_coefficients, deg_cost, losses, delivery_fraction
+=======
+    pRt_range = [r for r in pRt_range for _ in range(Num_freq_days)]
+    # Repeat each pRt value by the occurrence of each frequency time series day
+    pRt_range = [pRt for pRt, count in zip(pRt_range, Sorted_and_selected_frequency_day_occurrences * len(pRt_range)) for _ in range(count)]
+
+    # Losses
+    loss_coefficients = {}
+    for unit in Electrcial_Storage_Units:
+        loss_coefficients[unit] = curve_fit(lambda pRt_range, a, b: a * pRt_range + b, pRt_range, losses[unit])[0]
+
+    # Degradation cost
+    deg_cost_coefficients = \
+    curve_fit(lambda pRt_range, a, b, c: a * pRt_range ** 2 + b * pRt_range + c, pRt_range, deg_cost,
+              bounds=((0, -np.inf, -np.inf), (np.inf, np.inf, np.inf)))[0]
+
+    # Service delivery fraction
+    delivery_fraction_coefficients = \
+    curve_fit(lambda pRt_range, a, b, c: a * pRt_range ** 2 + b * pRt_range + c, pRt_range, delivery_fraction,
+              bounds=((0, -np.inf, -np.inf), (np.inf, np.inf, np.inf)))[0]
+
+    # Update config file accordingly
+    for idx, unit in enumerate(Electrcial_Storage_Units):
+        config["Electrcial_Storage_Units"][idx][unit]["Loss_coef_a"] = loss_coefficients[unit][0]
+        config["Electrcial_Storage_Units"][idx][unit]["Loss_coef_b"] = loss_coefficients[unit][1]
+
+        if unit == "Lithium_Battery":
+            config["Electrcial_Storage_Units"][idx]["Lithium_Battery"]["Deg_cost_coef_a"] = deg_cost_coefficients[0]
+            config["Electrcial_Storage_Units"][idx]["Lithium_Battery"]["Deg_cost_coef_b"] = deg_cost_coefficients[1]
+            config["Electrcial_Storage_Units"][idx]["Lithium_Battery"]["Deg_cost_coef_c"] = deg_cost_coefficients[2]
+
+    #print(f"time for coef: {round(time.time() - sim_time)}")
+
+    if not standalone:
+        return config
+    else:
+
+        return pRt_range, loss_coefficients, deg_cost_coefficients, delivery_fraction_coefficients, deg_cost, losses, delivery_fraction
+>>>>>>> 0da2bc078a3be0cb99786cad5795227c10caf86b
 
 
 def Schedule_optimization(config):
@@ -415,6 +460,13 @@ def Schedule_optimization(config):
 
     return results
 
+<<<<<<< HEAD
+=======
+    Thermal_load= config["Thermal_Loads"][""]
+    Electrical_load= config["Electrical_Loads"][""]
+    Thermal_gen= config["Thermal_Generators"][""]
+    Electrical_gen= config["Electrical_Generators"][""]
+>>>>>>> 0da2bc078a3be0cb99786cad5795227c10caf86b
     
 # def Calculate_total_gradient(netOpCost_cur, netOpCost_pert, config):
 #     c_cap = np.array([float(d[list(d.keys())[0]][k]) for k in ["PowerCapCost", "EnergyCapCost"] for d in
@@ -649,6 +701,7 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     # else:
     #     EnPrice = manual_prices["EnPrice[€/kWh]"].values
     #     # RegPrice = manual_prices["RegPrice[€/kW]"].values
+<<<<<<< HEAD
     # EnPrice= []
     # HeatPrice= []
     # pLoad = []
@@ -656,6 +709,15 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     # Deg_cost_coef_a = [Deg_cost_coef_a_A, Deg_cost_coef_a_B, Deg_cost_coef_a_C]  # Assign degradation cost coefficients for each ESS
     # Deg_cost_coef_b = [Deg_cost_coef_b_A, Deg_cost_coef_b_B, Deg_cost_coef_b_C]  # Assign degradation cost coefficients for each ESS
     # Deg_cost_coef_c = [Deg_cost_coef_c_A, Deg_cost_coef_c_B, Deg_cost_coef_c_C]  # Assign degradation cost coefficients for each ESS
+=======
+    EnPrice= []
+    HeatPrice= []
+    pLoad = []
+    pGen= []
+    Deg_cost_coef_a = [Deg_cost_coef_a_A, Deg_cost_coef_a_B, Deg_cost_coef_a_C]  # Assign degradation cost coefficients for each ESS
+    Deg_cost_coef_b = [Deg_cost_coef_b_A, Deg_cost_coef_b_B, Deg_cost_coef_b_C]  # Assign degradation cost coefficients for each ESS
+    Deg_cost_coef_c = [Deg_cost_coef_c_A, Deg_cost_coef_c_B, Deg_cost_coef_c_C]  # Assign degradation cost coefficients for each ESS
+>>>>>>> 0da2bc078a3be0cb99786cad5795227c10caf86b
     # Define missing parameters
   
     pGen = [0] * TimePeriods  # Electrical generation (default to 0)
@@ -667,7 +729,10 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     qImp_max = [float('inf')] * TimePeriods  # Maximum heat import (default to infinity)
     qExp_max = [float('inf')] * TimePeriods  # Maximum heat export (default to infinity)
     HeatPrice = [0] * TimePeriods  # Heat price (default to 0)
+<<<<<<< HEAD
     EnPrice = [0] * TimePeriods 
+=======
+>>>>>>> 0da2bc078a3be0cb99786cad5795227c10caf86b
     eta_RC = config["Thermal_to_Electrical_Converters"][0]["Ranking_Cycle"]["Eta_RC"]  # Efficiency of Rankine Cycle
     
     ### Time Periods ###
@@ -847,7 +912,10 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     model.T = RangeSet(1, TimePeriods)  # Set of Time Periods
     # Set of electrical energy storage units
     model.ESS = Set(initialize=['A', 'B', 'C'])
+<<<<<<< HEAD
     model.TES = set(initialize=['A'])
+=======
+>>>>>>> 0da2bc078a3be0cb99786cad5795227c10caf86b
     # HESS Variables
     model.pEt = Var(model.T, domain=Reals)  # HESS Total Energy Consumption
     model.pRt = Var(model.T, domain=NonNegativeReals)  # HESS Total Regulation Provision
@@ -894,7 +962,14 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     model.Qt0_A = Var(domain=NonNegativeReals)  # Initial State of Energy (Charge)
     #TODO: qt0 and et0: Can be constant 
     # Rankine cycle
+<<<<<<< HEAD
     model.q2p = Var(model.T, domain=NonNegativeReals)  # Thermal power covrted to electrical power
+=======
+    model.qEt_RC = Var(model.T, domain=Reals)  # Energy Consumption
+    model.qBt_RC = Var(model.T, domain=Reals)  # Basepoint (power)
+    model.q2p = Var(model.T, domain=NonNegativeReals)  # E_lectrical power covrted to thermal power
+    model.q2E = Var(model.T, domain=NonNegativeReals)  # E_lectrical energy covrted to thermal energy
+>>>>>>> 0da2bc078a3be0cb99786cad5795227c10caf86b
     
     # Energy imports/exports
     model.pImp = Var(model.T, domain=NonNegativeReals)  # Electricity import
@@ -903,7 +978,10 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     model.qExp = Var(model.T, domain=NonNegativeReals)  # Heat export
     # Basepoint power for each storage unit
     model.pBt = Var(model.ESS, model.T, domain=Reals)
+<<<<<<< HEAD
     #TODO: check if we can use i instead of _A, _B, _C in all constraints
+=======
+>>>>>>> 0da2bc078a3be0cb99786cad5795227c10caf86b
 
     # Objective function
     # def obj_rule(model):
