@@ -17,133 +17,101 @@ import yaml
 pd.set_option('display.max_columns', None)
 
 ### Parameters ###
-aliases = {"Vanadium_Battery": "vrb", "Lithium_Battery": "li", "Super_Capacitor": "sc"} #TODO: Why we need them?
-
-default_config = {
-    'Name': 'Minimal configuration for HESS optimization',
-    'Comments': 'Includes only required parameters from optimization formulation.',
-    'Timeseries': {
-        'Type': 'Frequency',
-        'Input_File': None,
-        'Scaling': 1,
-        'Power_reserve_schedule': None,
-        'Power_reserve_period': 60
-    },
-    'Execution': {
-        'Real_Time': False,
-        'End_Time': 100000,
-        'Minimum_Resolution': 1
-    },
-    'Sizing_Params': {
-    'Num_price_days': 12,
-    'Price_day_weighting': [], 
-    'UseParallel': True,
-    'Max_iterations': 1000,
-    'Stepsize': 0.01,
-    'Tolerance': 0.001,
-    'Delta_x': 0.01
-},
-    # 'HESS_Params': {
-    #     'HESS_score': 1,
-    #     'Kappa': 0.25,
-    #     'Zeta': 1,
-    #     'BudgetLimit': 10000,
-    #     'FixedCost': 0,
-    #     'Int_rate': 0.05,
-    #     'Lifetime': 10
-    # },
-    'Electrcial_Storage_Units': [{
-        'Lithium_Battery': {
-            'Available_Capacity': 1,
-            'Available_Power': 1,
-            'Min_Limit_Energy_Capacity': 0.0001,
-            'Max_Limit_Energy_Capacity': 40,
-            'Min_Limit_Power': 0,
-            'Max_Limit_Power': 15,
-            'Eta_ch': 0.9,
-            'Eta_dis': 0.9,
-            'Static': 0,
-            'Gamma': 1,
-            'Initial_SOC': 50,
-            'Maximum_SOC': 90,
-            'Minimum_SOC': 10,
-            'Loss_coef_a': 0.005,
-            'Loss_coef_b': 0.005,
-            'Deg_cost_coef_a': 0.005,
-            'Deg_cost_coef_b': 0.005,
-            'Deg_cost_coef_c': 0.005,
-            'Deg_cost_per_kWh': 1000
-        },
-    
-    'Super_Capacitor': {
-        'Available_Capacity': 0.5,
-        'Available_Power': 1,
-        'Min_Limit_Energy_Capacity': 0.0001,
-        'Max_Limit_Energy_Capacity': 0.5,
-        'Min_Limit_Power': 0,
-        'Max_Limit_Power': 15,
-        'Eta_ch': 0.92,
-        'Eta_dis': 0.92,
-        'Static': 0,
-        'Gamma': 1,
-        'Initial_SOC': 50,
-        'Maximum_SOC': 90,
-        'Minimum_SOC': 10,
-        'Loss_coef_a': 0.005,
-        'Loss_coef_b': 0.005,
-        'Deg_cost_coef_a': 0.005,
-        'Deg_cost_coef_b': 0.005,
-        'Deg_cost_coef_c': 0.005,
-        'Deg_cost_per_kWh': 1000
-    },
-    'Pumped_Hydro': {
-        'Available_Capacity': 100,
-        'Available_Power': 10,
-        'Min_Limit_Energy_Capacity': 0.0001,
-        'Max_Limit_Energy_Capacity': 100,
-        'Min_Limit_Power': 0,
-        'Max_Limit_Power': 10,
-        'Eta_ch': 0.85,
-        'Eta_dis': 0.85,
-        'Static': 0,
-        'Gamma': 1,
-        'Initial_SOC': 50,
-        'Maximum_SOC': 90,
-        'Minimum_SOC': 10,
-        'Loss_coef_a': 0.002,
-        'Loss_coef_b': 0.002,
-        'Deg_cost_coef_a': 0.002,
-        'Deg_cost_coef_b': 0.002,
-        'Deg_cost_coef_c': 0.002,
-        'Deg_cost_per_kWh': 100
-    }
-    }],
-    'Thermal_Storage_Units': [{
-        'PCM': {
-            'Available_Capacity': 0.5,
-            'Available_Power': 1,
-            'Min_Limit_Energy_Capacity': 0.0001,
-            'Max_Limit_Energy_Capacity': 0.5,
-            'Min_Limit_Power': 0,
-            'Max_Limit_Power': 15,
-            'Eta_ch': 0.92,
-            'Eta_dis': 0.92,
-            'Static': 0,
-            'Initial_SOC': 50,
-            'Maximum_SOC': 90,
-            'Minimum_SOC': 10
-        }
-    }],
-    'Thermal_to_Electrical_Converters': [{
-        'Ranking_Cycle': {
-            'Available_Power': 1,
-            'Min_Limit_Power': 0,
-            'Max_Limit_Power': 15,
-            'Eta_RC': 0.38
-        }
-    }]
-}
-                      
+default_config = {'Name': 'Minimal configuration for HESS optimization',
+                'Comments': 'Includes only required parameters from optimization formulation.',
+                'Timeseries': {
+                    'Input_File': None,
+                    'Scaling': 1,
+                    'Power_reserve_schedule': None,
+                    'Power_reserve_period': 60
+                },
+                'Execution': {'Real_Time': False,
+                                'Minimum_Resolution': 1,
+                                'End_Time': 86400,
+                                'TimePeriods': 24,
+                                'dt': 1},
+                'Sizing_Params':{'Price_file': "price_day12.csv"},
+                'Electrcial_Storage_Units': [{'Lithium_Battery': {
+                                                'Available_Capacity': 1,
+                                                'Available_Power': 1,
+                                                'Min_Limit_Energy_Capacity': 0.0001,
+                                                'Max_Limit_Energy_Capacity': 40,
+                                                'Min_Limit_Power': 0,
+                                                'Max_Limit_Power': 15,
+                                                'Eta_ch': 0.9,
+                                                'Eta_dis': 0.9,
+                                                'Static': 0,
+                                                'Gamma': 1,
+                                                'Initial_SOC': 50,
+                                                'Maximum_SOC': 90,
+                                                'Minimum_SOC': 10,
+                                                'Cost_ESS': 0.04
+                                            }},
+                
+                                            {'Super_Capacitor': {
+                                                'Available_Capacity': 0.5,
+                                                'Available_Power': 1,
+                                                'Min_Limit_Energy_Capacity': 0.0001,
+                                                'Max_Limit_Energy_Capacity': 0.5,
+                                                'Min_Limit_Power': 0,
+                                                'Max_Limit_Power': 15,
+                                                'Eta_ch': 0.92,
+                                                'Eta_dis': 0.92,
+                                                'Static': 0,
+                                                'Gamma': 1,
+                                                'Initial_SOC': 50,
+                                                'Maximum_SOC': 90,
+                                                'Minimum_SOC': 10,
+                                                'Cost_ESS': 0.04
+                                            }},
+                                            {'Pumped_Hydro': {
+                                                'Available_Capacity': 100,
+                                                'Available_Power': 10,
+                                                'Min_Limit_Energy_Capacity': 0.0001,
+                                                'Max_Limit_Energy_Capacity': 100,
+                                                'Min_Limit_Power': 0,
+                                                'Max_Limit_Power': 10,
+                                                'Eta_ch': 0.85,
+                                                'Eta_dis': 0.85,
+                                                'Static': 0,
+                                                'Initial_SOC': 50,
+                                                'Maximum_SOC': 90,
+                                                'Minimum_SOC': 10,
+                                                'Cost_ESS': 0.04
+                                            }
+                                            }],
+                'Thermal_Storage_Units': [{'PCM': {
+                                                    'Available_Capacity': 0.5,
+                                                    'Available_Power': 1,
+                                                    'Min_Limit_Energy_Capacity': 0.0001,
+                                                    'Max_Limit_Energy_Capacity': 0.5,
+                                                    'Min_Limit_Power': 0,
+                                                    'Max_Limit_Power': 15,
+                                                    'Eta_ch': 0.92,
+                                                    'Eta_dis': 0.92,
+                                                    'Static': 0,
+                                                    'Initial_SOC': 50,
+                                                    'Maximum_SOC': 90,
+                                                    'Minimum_SOC': 10,
+                                                    'Cost_ESS': 0.04
+                                                }
+                                            }],
+                'Thermal_to_Electrical_Converters': {'Ranking_Cycle': {
+                                                    'Available_Power': 1,
+                                                    'Min_Limit_Power': 0,
+                                                    'Max_Limit_Power': 15,
+                                                    'Eta_RC': 0.38,
+                                                    'Cost_ESS': 0.04
+                                                }},
+                'General': {'pLoad': 100,
+                            'qDemand': 100,
+                            'pGrid_max': 100000,
+                            'qGrid_max': 100000,
+                            'HeatPrice': None,
+                            'EnPrice': None, 
+                            'pGen': None,
+                            'qGen': None
+                }}
 
 
 ### Functions ###
@@ -158,93 +126,33 @@ def initialize_config(default_config, user_config):
             for dict_key, dict_value in config_value.items():
                 updated_config[config_key][dict_key] = dict_value
         elif config_key == "Electrcial_Storage_Units":
-            for storage_dict in config_value:
-                unit_name = list(storage_dict.keys())[0]
+            for El_storage_dict in config_value:
+                unit_name = list(El_storage_dict.keys())[0]
                 unit_idx = None
-                for i, storage_dict_in_updated_config in enumerate(updated_config["Electrcial_Storage_Units"]):
-                    if unit_name in storage_dict_in_updated_config.keys():
+                for i, El_storage_dict_in_updated_config in enumerate(updated_config["Electrcial_Storage_Units"]):
+                    if unit_name in El_storage_dict_in_updated_config.keys():
                         unit_idx = i
-                for k2, v2 in storage_dict.items():
+                for k2, v2 in El_storage_dict.items():
                     for k3, v3 in v2.items():
                         updated_config["Electrcial_Storage_Units"][unit_idx][unit_name][k3] = v3
+        elif config_key == "Thermal_Storage_Units":
+            for Th_storage_dict in config_value:
+                unit_name = list(Th_storage_dict.keys())[0]
+                unit_idx = None
+                for i, Th_storage_dict_in_updated_config in enumerate(updated_config["Thermal_Storage_Units"]):
+                    if unit_name in Th_storage_dict_in_updated_config.keys():
+                        unit_idx = i
+                for k2, v2 in Th_storage_dict.items():
+                    for k3, v3 in v2.items():
+                        updated_config["Thermal_Storage_Units"][unit_idx][unit_name][k3] = v3
         else:
             updated_config[config_key] = config_value
 
     # Remove all storage units which are not defined by the user
-    user_defined_units = [list(storage_dict.keys())[0] for storage_dict in user_config["Electrcial_Storage_Units"]]
-    updated_config["Electrcial_Storage_Units"] = [storage_dict_in_updated_config for storage_dict_in_updated_config in updated_config["Electrcial_Storage_Units"] if list(storage_dict_in_updated_config.keys())[0] in user_defined_units]
+    user_defined_units = [list(El_storage_dict.keys())[0] for El_storage_dict in user_config["Electrcial_Storage_Units"]]
+    updated_config["Electrcial_Storage_Units"] = [El_storage_dict_in_updated_config for El_storage_dict_in_updated_config in updated_config["Electrcial_Storage_Units"] if list(El_storage_dict_in_updated_config.keys())[0] in user_defined_units]
 
     return updated_config
-
-def Hourly_li_degradation_cost(res, config):
-    """
-    Calculates the cost for lithium battery degradation from the simulation results.
-
-    Args:
-        res (dataframe): Simulation results of one day at constant power reserve
-        config (dict): Current HESS configuration used to initialize and run the simulation
-
-    Return:
-        Hourly cost for degradation
-
-    Assumptions:
-        Simulation run of one day (24 hours)
-    """
-
-    # Get index of Lithium_Battery
-    for i, storage_dict in enumerate(config["Electrcial_Storage_Units"]):
-        if "Lithium_Battery" in storage_dict.keys():
-            li_idx = i
-
-    cost_per_kWh = config["Electrcial_Storage_Units"][li_idx]["Lithium_Battery"]["Deg_cost_per_kWh"]  # €/kWh
-    e_cap_before = res["e_li_max"].iloc[0]  # kWh
-    e_cap_after = res["e_li_max"].iloc[-1]  # kWh
-    lost_e_cap = e_cap_before - e_cap_after  # kWh
-
-    return cost_per_kWh * lost_e_cap / 24  # (€/kWh)*(kWh)/h
-
-
-def Service_delivery_fraction(res):
-    """
-    Calculates the service delivery fraction from the simulation results.
-
-    Args:
-        res (dataframe): Simulation results of one day at constant power reserve
-
-    Return:
-        Service delivery fraction
-
-    Assumptions:
-        Simulation run of one day (24 hours)
-    """
-
-    res_w_o_SOC_res = res.iloc[:86400].copy()  # Remove SOC restoration period from sim results
-
-    return len(res_w_o_SOC_res[res_w_o_SOC_res["p_ref"].round(1) == res_w_o_SOC_res["p_set_hess"].round(1)]) / len(res_w_o_SOC_res)
-
-
-def Hourly_losses(res, unit_alias):
-    """
-    Calculates the losses for a particular storage unit from the simulation results.
-
-    Args:
-        res (dataframe): Simulation results of one day at constant power reserve
-        unit_alias (string): Alias of storage unit
-
-    Return:
-        Losses
-
-    Assumptions:
-        - Simulation run of one day (24 hours)
-        - SOC starts and ends at same value. (must be ensured by controller and a sufficient restoration time)
-    """
-
-    e_in = res[res[f"p_{unit_alias}_meas"] < 0][f"p_{unit_alias}_meas"].sum()  # Energy charged over one day (kWs)
-    e_out = res[res[f"p_{unit_alias}_meas"] > 0][f"p_{unit_alias}_meas"].sum()  # Energy discharged over one day (kWs)
-    #TODO: Update?
-
-    return -(e_in + e_out) / 3600 / 24  # (kWs/d)/((s/h)*(h/d)) -> kWh/h
-
 
 def Schedule_optimization(config):
     # Create config set for the selected representative price days and add the respective price file to each
@@ -345,22 +253,21 @@ def Approximate_Yearly_Cost_from_Simulation(schedules, config):
 
 
 def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
-      
-    pGen = [0] * TimePeriods  # Electrical generation (default to 0)
-    qGen = [0] * TimePeriods  # Thermal generation (default to 0)
+    TimePeriods =24
+    pGen = [100] * TimePeriods  # Electrical generation (default to 0)
+    qGen = [100] * TimePeriods  # Thermal generation (default to 0)
     pLoad = [0] * TimePeriods  # Electrical load (default to 0)
     qDemand = [0] * TimePeriods  # Thermal load (default to 0)
-    EnPrice= [0] * TimePeriods
+    EnPrice= [0.02] * TimePeriods
     HeatPrice= [0] * TimePeriods
     pGrid_max = [float('inf')] * TimePeriods  # Maximum electricity exchange (default to infinity)
     qGrid_max = [float('inf')] * TimePeriods  # Maximum heat exchange (default to infinity)
-    eta_RC = config["Thermal_to_Electrical_Converters"][0]["Ranking_Cycle"]["Eta_RC"]  # Efficiency of Rankine Cycle
-    Cost_ESS_A= [0]
-    Cost_ESS_B= [0]
-    Cost_ESS_C= [0]
-    Cost_TES_A= [0]
+    Cost_ESS_A= 0.04
+    Cost_ESS_B= 0.04
+    Cost_ESS_C= 0.04
+    Cost_TES_A= 0.04
     ### Time Periods ###
-    TimePeriods = len(EnPrice)  # used for debugging update to 24 periods
+    # TimePeriods = len(EnPrice)  # used for debugging update to 24 periods
     dt = float(1)  # duration of time period
 
     P_A = float(
@@ -373,6 +280,9 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
                          "L_total"])
     except KeyError:
         pass
+    eta_RC = float(
+        config['Thermal_to_Electrical_Converters'][0][list(config['Thermal_to_Electrical_Converters'][0].keys())[0]]["Eta_RC"])  # Efficiency of Rankine Cycle
+
     eta_ch_A = float(
         config['Electrcial_Storage_Units'][0][list(config['Electrcial_Storage_Units'][0].keys())[0]]["Eta_ch"])  # efficiency loss (charging)
     eta_dis_A = float(config['Electrcial_Storage_Units'][0][list(config['Electrcial_Storage_Units'][0].keys())[0]][
@@ -460,13 +370,8 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     model.T = RangeSet(1, TimePeriods)  # Set of Time Periods
     # Set of electrical energy storage units
     model.ESS = Set(initialize=['A', 'B', 'C'])
-    model.TES = set(initialize=['A'])
-    # HESS Variables
-    model.pEt = Var(model.T, domain=Reals)  # HESS Total Energy Consumption
-    model.pRt = Var(model.T, domain=NonNegativeReals)  # HESS Total Regulation Provision
-
+    # model.TES = set(initialize=['A'])
     # ESS A Variables
-    model.pEt_A = Var(model.T, domain=Reals)  # Energy Consumption
     model.pBt_A = Var(model.T, domain=Reals)  # Basepoint (power)
     model.pBtch_A = Var(model.T, domain=NonNegativeReals)  # Basepoint charging
     model.pBtdis_A = Var(model.T, domain=NonNegativeReals)  # Basepoint discharging
@@ -476,7 +381,6 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     model.et0_A = Var(domain=NonNegativeReals)  # Initial State of Energy (Charge)
 
     # ESS B Variables
-    model.pEt_B = Var(model.T, domain=Reals)  # Energy Consumption
     model.pBt_B = Var(model.T, domain=Reals)  # Basepoint (power)
     model.pBtch_B = Var(model.T, domain=NonNegativeReals)  # Basepoint charging
     model.pBtdis_B = Var(model.T, domain=NonNegativeReals)  # Basepoint discharging
@@ -486,7 +390,6 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     model.et0_B = Var(domain=NonNegativeReals)  # Initial State of Energy (Charge)
 
     # ESS C Variables
-    model.pEt_C = Var(model.T, domain=Reals)  # Energy Consumption
     model.pBt_C = Var(model.T, domain=Reals)  # Basepoint (power)
     model.pBtch_C = Var(model.T, domain=NonNegativeReals)  # Basepoint charging
     model.pBtdis_C = Var(model.T, domain=NonNegativeReals)  # Basepoint discharging
@@ -494,10 +397,10 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     model.zdis_C = Var(model.T, domain=Boolean)  # Binary indicating discharging
     model.et_C = Var(model.T, domain=NonNegativeReals)  # State of Energy (Charge)
     model.et0_C = Var(domain=NonNegativeReals)  # Initial State of Energy (Charge)
-
+    #RC
+    model.pBt_RC = Var(model.T,domain=NonNegativeReals)  # RC output power
 
     # # Thermal ESS A Variables
-    model.qEt_A = Var(model.T, domain=Reals)  # Energy Consumption
     model.qBt_A = Var(model.T, domain=Reals)  # Basepoint (power)
     model.qBtch_A = Var(model.T, domain=NonNegativeReals)  # Basepoint charging
     model.qBtdis_A = Var(model.T, domain=NonNegativeReals)  # Basepoint discharging
@@ -510,14 +413,10 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     model.q2p = Var(model.T, domain=NonNegativeReals)  # Thermal power covrted to electrical power
     
     # Energy imports/exports
-    model.pImp = Var(model.T, domain=NonNegativeReals)  # Electricity import
-    model.pExp = Var(model.T, domain=NonNegativeReals)  # Electricity export
-    model.pGrid = Var(model.T, domain=NonNegativeReals)  # Grid electricity exchange
-    model.qImp = Var(model.T, domain=NonNegativeReals)  # Heat import
-    model.qExp = Var(model.T, domain=NonNegativeReals)  # Heat export
-    model.qGrid = Var(model.T, domain=NonNegativeReals)  # Grid heat exchange
+    model.pGrid = Var(model.T, domain=Reals)  # Grid electricity exchange
+    model.qGrid = Var(model.T, domain=Reals)  # Grid heat exchange
     # Basepoint power for each storage unit
-    model.pBt = Var(model.ESS, model.T, domain=Reals)
+    # model.pBt = Var(model.ESS, model.T, domain=Reals)
     #TODO: check if we can use i instead of _A, _B, _C in all constraints
 
     #             )
@@ -543,19 +442,18 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
 
     #TODO: Check conventions
     
-
     def Electricity_balance_rule(model, tt):
         return (
-            pGen[tt] + model.pGrid[tt] ==
-            model.pB_A[tt] + model.pBt_B[tt] + model.pBt_C[tt] +
-            pLoad[tt] 
+            pGen[tt-1] + model.pGrid[tt] ==
+            model.pBt_A[tt] + model.pBt_B[tt] + model.pBt_C[tt] +
+            pLoad[tt-1] 
         )
     model.Electricity_balance = Constraint(model.T, rule=Electricity_balance_rule)
     
     def Thermal_balance_rule(model, tt):
         return (
-            qGen[tt] + model.qGrid[tt] ==
-            model.qB_A[tt] + qDemand[tt] 
+            qGen[tt-1] + model.qGrid[tt] ==
+            model.qBt_A[tt] + qDemand[tt-1] 
         )
     model.Thermal_balance = Constraint(model.T, rule=Thermal_balance_rule)
 
@@ -748,19 +646,19 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     #TODO: Rankine cycle input is thermal waste! q2p = qGen- qLoad
     
     def Elec_Import_Limit_rule(model, tt):
-        return model.pGrid[tt] <= pGrid_max[tt]
+        return model.pGrid[tt] <= pGrid_max[tt-1]
     model.Elec_Import_Limit = Constraint(model.T, rule=Elec_Import_Limit_rule)
 
     def Elec_Export_Limit_rule(model, tt):
-        return -pGrid_max[tt] <=  model.pGrid[tt]
+        return -pGrid_max[tt-1] <=  model.pGrid[tt]
     model.Elec_Export_Limit = Constraint(model.T, rule=Elec_Export_Limit_rule)
 
     def Heat_Import_Limit_rule(model, tt):
-        return model.qGrid[tt] <= qGrid_max[tt]
+        return model.qGrid[tt] <= qGrid_max[tt-1]
     model.Heat_Import_Limit = Constraint(model.T, rule=Heat_Import_Limit_rule)
 
     def Heat_Export_Limit_rule(model, tt):
-        return -qGrid_max[tt] <= model.qGrid[tt]
+        return -qGrid_max[tt-1] <= model.qGrid[tt]
     model.Heat_Export_Limit = Constraint(model.T, rule=Heat_Export_Limit_rule)
     #TODO: check regulation limits for Rankine Cycle
     ### Define solver, create model instance and solve ###

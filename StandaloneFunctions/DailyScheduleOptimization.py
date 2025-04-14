@@ -32,7 +32,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Run_Daily_Schedule_Optimization, initialize_config, default_config
 ### User Settings ###
-Config_file = "StoRIES.yaml"
+Config_file = "config_template.yaml"
 Manual_prices = None #pd.DataFrame({"EnPrice[€/kWh]": [101, 102, 50, 103, 104], "RegPrice[€/kW]": [200, 0, 0, 0, 0]})
 plot_results = True
 store_results = True
@@ -46,14 +46,14 @@ logging.basicConfig(level=logging.INFO, format='%(message)s', handlers=[logging.
 
 ### Load config ###
 logging.info(f"Reading config file {Config_file}...")
-# with open(os.path.join("./Config", Config_file), 'r') as file:
-#     user_config = yaml.safe_load(file)
+with open(os.path.join("./Config", Config_file), 'r') as file:
+    user_config = yaml.safe_load(file)
 
-with open (os.path.join("./Config", "scenario_run_01_1.yaml"), 'r') as file:
-    scenario_config = yaml.safe_load(file)
+# with open (os.path.join("./Config", "scenario_run_01_1.yaml"), 'r') as file:
+#     scenario_config = yaml.safe_load(file)
 ### Overwrite default config with entries from user config ###
-# config = initialize_config(default_config, user_config)
-config = initialize_config(default_config, scenario_config)
+config = initialize_config(default_config, user_config)
+# config = initialize_config(default_config, scenario_config)
 with open(os.path.join("./Config", Config_file), 'r') as file:
     user_config = yaml.safe_load(file)
 
@@ -89,7 +89,7 @@ if plot_results:
     logging.info(f"Plotting results...")
     if scale_plotted_data:
         scaler = MinMaxScaler()
-        Daily_results_df = pd.DataFrame(scaler.fit_transform(Daily_results_df.to_numpy()), columns=Daily_results_df.columns)
+        # Daily_results_df = pd.DataFrame(scaler.fit_transform(Daily_results_df.to_numpy()), columns=Daily_results_df.columns)
 
     # Set up plot
     fig, (ax11, ax21, ax31, ax41, ax51) = plt.subplots(5, 1, sharex=True)
