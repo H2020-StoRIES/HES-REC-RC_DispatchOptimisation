@@ -30,7 +30,7 @@ import logging
 from time import time
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils_Original import Run_Daily_Schedule_Optimization, initialize_config, default_config
+from utils import Run_Daily_Schedule_Optimization, initialize_config, default_config
 ### User Settings ###
 Config_file = "StoRIES.yaml"
 Manual_prices = None #pd.DataFrame({"EnPrice[€/kWh]": [101, 102, 50, 103, 104], "RegPrice[€/kW]": [200, 0, 0, 0, 0]})
@@ -46,7 +46,6 @@ logging.basicConfig(level=logging.INFO, format='%(message)s', handlers=[logging.
 
 ### Load config ###
 logging.info(f"Reading config file {Config_file}...")
-<<<<<<< HEAD
 # with open(os.path.join("./Config", Config_file), 'r') as file:
 #     user_config = yaml.safe_load(file)
 
@@ -55,7 +54,6 @@ with open (os.path.join("./Config", "scenario_run_01_1.yaml"), 'r') as file:
 ### Overwrite default config with entries from user config ###
 # config = initialize_config(default_config, user_config)
 config = initialize_config(default_config, scenario_config)
-=======
 with open(os.path.join("./Config", Config_file), 'r') as file:
     user_config = yaml.safe_load(file)
 
@@ -63,7 +61,6 @@ with open(os.path.join("./Config", Config_file), 'r') as file:
 ### Overwrite default config with entries from user config ###
 config = initialize_config(default_config, user_config)
 
->>>>>>> 0da2bc078a3be0cb99786cad5795227c10caf86b
 
 ### Run Daily optimization problem ###
 logging.info(f"Running daily schedule optimization with {'prices from config...' if Manual_prices is None else 'manually defined prices...'}")
