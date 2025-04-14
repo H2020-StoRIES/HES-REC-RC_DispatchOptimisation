@@ -129,7 +129,6 @@ default_config = {
             'Eta_ch': 0.92,
             'Eta_dis': 0.92,
             'Static': 0,
-            'Gamma': 1,
             'Initial_SOC': 50,
             'Maximum_SOC': 90,
             'Minimum_SOC': 10
