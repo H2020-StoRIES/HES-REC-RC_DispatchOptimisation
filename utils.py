@@ -24,6 +24,7 @@ default_config = {'Name': 'Minimal configuration for HESS optimization',
                     'Scaling': 1,
                     'Power_reserve_schedule': None,
                     'Power_reserve_period': 60
+                    
                 },
                 'Execution': {'Real_Time': False,
                                 'Minimum_Resolution': 1,
@@ -32,12 +33,10 @@ default_config = {'Name': 'Minimal configuration for HESS optimization',
                                 'dt': 1},
                 'Sizing_Params':{'Price_file': "price_day12.csv"},
                 'Electrcial_Storage_Units': [{'Lithium_Battery': {
-                                                'Available_Capacity': 1,
-                                                'Available_Power': 1,
+                                                'Available_Capacity': 2575.125,
+                                                'Available_Power': 450,
                                                 'Min_Limit_Energy_Capacity': 0.0001,
                                                 'Max_Limit_Energy_Capacity': 40,
-                                                'Min_Limit_Power': 0,
-                                                'Max_Limit_Power': 15,
                                                 'Eta_ch': 0.9,
                                                 'Eta_dis': 0.9,
                                                 'Static': 0,
@@ -53,8 +52,6 @@ default_config = {'Name': 'Minimal configuration for HESS optimization',
                                                 'Available_Power': 1,
                                                 'Min_Limit_Energy_Capacity': 0.0001,
                                                 'Max_Limit_Energy_Capacity': 0.5,
-                                                'Min_Limit_Power': 0,
-                                                'Max_Limit_Power': 15,
                                                 'Eta_ch': 0.92,
                                                 'Eta_dis': 0.92,
                                                 'Static': 0,
@@ -69,8 +66,6 @@ default_config = {'Name': 'Minimal configuration for HESS optimization',
                                                 'Available_Power': 10,
                                                 'Min_Limit_Energy_Capacity': 0.0001,
                                                 'Max_Limit_Energy_Capacity': 100,
-                                                'Min_Limit_Power': 0,
-                                                'Max_Limit_Power': 10,
                                                 'Eta_ch': 0.85,
                                                 'Eta_dis': 0.85,
                                                 'Static': 0,
@@ -85,8 +80,6 @@ default_config = {'Name': 'Minimal configuration for HESS optimization',
                                                     'Available_Power': 1,
                                                     'Min_Limit_Energy_Capacity': 0.0001,
                                                     'Max_Limit_Energy_Capacity': 0.5,
-                                                    'Min_Limit_Power': 0,
-                                                    'Max_Limit_Power': 15,
                                                     'Eta_ch': 0.92,
                                                     'Eta_dis': 0.92,
                                                     'Static': 0,
@@ -98,10 +91,8 @@ default_config = {'Name': 'Minimal configuration for HESS optimization',
                                             }],
                 'Thermal_to_Electrical_Converters': {'Ranking_Cycle': {
                                                     'Available_Power': 1,
-                                                    'Min_Limit_Power': 0,
-                                                    'Max_Limit_Power': 15,
                                                     'Eta_RC': 0.38,
-                                                    'Cost_ESS': 0.04
+                                                    'Cost_RC': 0.04
                                                 }},
                 'General': {'pLoad': 100,
                             'qDemand': 100,
@@ -154,134 +145,41 @@ def initialize_config(default_config, user_config):
 
     return updated_config
 
-def Schedule_optimization(config):
-    # Create config set for the selected representative price days and add the respective price file to each
-    Num_price_days = config["Sizing_Params"]["Num_price_days"]
-    Price_day_weighting = config["Sizing_Params"]["Price_day_weighting"]
-    Sorted_and_selected_price_day_indexes = sorted(range(len(Price_day_weighting)), key=lambda i: Price_day_weighting[i], reverse=True)[:Num_price_days]
-
-    configs = []
-    for price_day_idx in Sorted_and_selected_price_day_indexes:
-        cfg = deepcopy(config)
-        cfg["Sizing_Params"]["Price_file"] = f"price_day{price_day_idx + 1}.csv"
-        configs.append(cfg)
-
-    # Determine optimal schedules for the selected representative days of price data
-    if config["Sizing_Params"]["UseParallel"]:
-        with Pool(processes=cpu_count()) as pool:
-            results = list(
-                pool.starmap(Run_Daily_Schedule_Optimization, [(configs[day], day) for day in range(Num_price_days)]))
-    else:
-        results = []
-        for day in range(Num_price_days):
-            results.append(Run_Daily_Schedule_Optimization(configs[day], day))
-
-    return results
-
-
-def Approximate_Yearly_Cost_from_Optimization(results, config):
-    Price_day_weighting = config["Sizing_Params"]["Price_day_weighting"]
-    Num_price_days = config["Sizing_Params"]["Num_price_days"]
-    results = dict(results)
-
-    Costs = []
-
-    # Extract cost of each day and add to the Costs list
-    for key in results.keys():
-        Costs.append(results[key]["Cost_upper_bound"])
-
-    # Define list which contains the yearly occurrences of the representative price days
-    Sorted_and_selected_price_day_weights = sorted(Price_day_weighting, reverse=True)[:Num_price_days]
-    Sorted_and_selected_price_day_weights_normalized = [w / sum(Sorted_and_selected_price_day_weights) for w in Sorted_and_selected_price_day_weights]
-    Sorted_and_selected_price_day_occurrences = [int(round(w * 365)) for w in Sorted_and_selected_price_day_weights_normalized]
-
-    # Calculate yearly cost by multiplying the cost of the representative price days with their yearly occurrences
-    Yearly_cost = sum(np.array(Costs) * np.array(Sorted_and_selected_price_day_occurrences))
-
-    return Yearly_cost
-
-
-def Approximate_Yearly_Cost_from_Simulation(schedules, config):
-    ### Create config set for the selected representative price days with the optimal pRt schedules and create it for each frequency day ###
-    pRt_schedules = [day_schedule[1]["pRt"] for day_schedule in schedules]
-    Num_freq_days = config["Sizing_Params"]["Num_freq_days"]
-    Num_price_days = config["Sizing_Params"]["Num_price_days"]
-    Frequency_day_weighting = config["Sizing_Params"]["Frequency_day_weighting"]
-    Price_day_weighting = config["Sizing_Params"]["Price_day_weighting"]
-    Sorted_and_selected_frequency_day_indexes = sorted(range(len(Frequency_day_weighting)), key=lambda i: Frequency_day_weighting[i], reverse=True)[:Num_freq_days]
-    Sorted_and_selected_price_day_indexes = sorted(range(len(Price_day_weighting)), key=lambda i: Price_day_weighting[i], reverse=True)[:Num_price_days]
-
-    configs = []
-
-    for schedule_idx, price_day_idx in enumerate(Sorted_and_selected_price_day_indexes):
-        for freq_day_idx in Sorted_and_selected_frequency_day_indexes:
-            cfg = deepcopy(config)
-            cfg["Timeseries"]["Input_File"] = os.path.join(os.path.dirname(__file__), rf"InputData\Frequency\frequency_day{freq_day_idx + 1}.csv")
-            cfg["Sizing_Params"]["Price_file"] = f"price_day{price_day_idx + 1}.csv"
-            cfg["Timeseries"]["Power_reserve_schedule"] = pRt_schedules[schedule_idx]
-            configs.append(cfg.copy())
-
-    ### Get simulation results ###
-    simulation_process = subprocess.Popen(["python", "SimulationServer.py"],
-                                          cwd=r"C:\Users\nnimy\PycharmProjects\lab-controller")
-    response = requests.post('http://localhost:5000/HESS_simulation', json=configs)  # Send a POST request
-    if response.status_code == 200:  # Check if the request was successful
-        Results = [pd.DataFrame(res) for res in response.json()]  # Extract the result from the response
-    else:
-        print("Failed to get result from HESS simulation")
-        sys.exit(1)
-    simulation_process.terminate()
-
-    ### Calculating cost from simulation results ###
-
-    Daily_cost = []
-
-    # Calculate the cost for each price day from weighted averaging over the different frequency time series [sum(0.X*day1, 0.X*day1), sum(0.X*day1, 0.X*day1), sum(0.X*day1, 0.X*day1)]
-    Sorted_and_selected_frequency_day_weights = sorted(Frequency_day_weighting, reverse=True)[:Num_freq_days]
-    Sorted_and_selected_frequency_day_weights_normalized = [w / sum(Sorted_and_selected_frequency_day_weights) for w in Sorted_and_selected_frequency_day_weights]
-    Cost_list = [sum([c*Sorted_and_selected_frequency_day_weights_normalized[idx] for idx, c in enumerate(Daily_cost[i:i + Num_freq_days])]) for i in range(0, len(Daily_cost), Num_freq_days)]
-
-    # Define list which contains the occurrence of the representative price days within one year
-    Sorted_and_selected_price_day_weights = sorted(Price_day_weighting, reverse=True)[:Num_price_days]
-    Sorted_and_selected_price_day_weights_normalized = [w / sum(Sorted_and_selected_price_day_weights) for w in Sorted_and_selected_price_day_weights]
-    Sorted_and_selected_price_day_occurrences = [int(round(w * 365)) for w in Sorted_and_selected_price_day_weights_normalized]
-
-    # Calculate yearly cost by multiplying the cost of the representative price days with their yearly occurrences
-    Yearly_cost = sum(np.array(Cost_list) * np.array(Sorted_and_selected_price_day_occurrences))
-
-    return Yearly_cost
-
-
 def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
-    TimePeriods =24
-    pGen = [100] * TimePeriods  # Electrical generation (default to 0)
-    qGen = [100] * TimePeriods  # Thermal generation (default to 0)
-    pLoad = [0] * TimePeriods  # Electrical load (default to 0)
-    qDemand = [0] * TimePeriods  # Thermal load (default to 0)
-    EnPrice= [0.02] * TimePeriods
-    HeatPrice= [0] * TimePeriods
-    pGrid_max = [float('inf')] * TimePeriods  # Maximum electricity exchange (default to infinity)
-    qGrid_max = [float('inf')] * TimePeriods  # Maximum heat exchange (default to infinity)
-    Cost_ESS_A= 0.04
-    Cost_ESS_B= 0.04
-    Cost_ESS_C= 0.04
-    Cost_TES_A= 0.04
+    TimePeriods = int(config['Execution']['TimePeriods'])
+    dt = float(config['Execution']['dt'])
+    pGen = config['General']['pGen']          # Electrical generation
+    qGen = config['General']['qGen']          # Thermal generation
+    pLoad = config['General']['pLoad']        # Electrical load
+    qDemand = config['General']['qDemand']    # Thermal load
+    EnPrice = config['General']['EnPrice']    # Electricity price
+    HeatPrice = config['General']['HeatPrice']  # Heat price
+    pGrid_max = config['General']['pGrid_max']  # Max electrical grid exchange
+    qGrid_max = config['General']['qGrid_max']  # Max thermal grid exchange
+    # pGen = [100] * TimePeriods  # Electrical generation (default to 0)
+    # qGen = [100] * TimePeriods  # Thermal generation (default to 0)
+    # pLoad = [0] * TimePeriods  # Electrical load (default to 0)
+    # qDemand = [0] * TimePeriods  # Thermal load (default to 0)
+    # EnPrice= [0.02] * TimePeriods
+    # HeatPrice= [0] * TimePeriods
+    # pGrid_max = [float('inf')] * TimePeriods  # Maximum electricity exchange (default to infinity)
+    # qGrid_max = [float('inf')] * TimePeriods  # Maximum heat exchange (default to infinity)
+    # Cost_ESS_A= 0.04
+    # Cost_ESS_B= 0.04
+    # Cost_ESS_C= 0.04
+    # Cost_TES_A= 0.04
     ### Time Periods ###
     # TimePeriods = len(EnPrice)  # used for debugging update to 24 periods
-    dt = float(1)  # duration of time period
+    # dt = float(1)  # duration of time period
+
+    eta_RC = float(
+        config['Thermal_to_Electrical_Converters'][0][list(config['Thermal_to_Electrical_Converters'][0].keys())[0]]["Eta_RC"])  # Efficiency of Rankine Cycle
 
     P_A = float(
         config['Electrcial_Storage_Units'][0][list(config['Electrcial_Storage_Units'][0].keys())[0]]["Available_Power"])  # Power Capacity
     E_A = float(
         config['Electrcial_Storage_Units'][0][list(config['Electrcial_Storage_Units'][0].keys())[0]]["Available_Capacity"])  # Energy Capacity
-    try:
-        E_A = E_A * (1 -
-                     config["Electrcial_Storage_Units"][0][list(config['Electrcial_Storage_Units'][0].keys())[0]]["Unit_Specific_Parameters"][
-                         "L_total"])
-    except KeyError:
-        pass
-    eta_RC = float(
-        config['Thermal_to_Electrical_Converters'][0][list(config['Thermal_to_Electrical_Converters'][0].keys())[0]]["Eta_RC"])  # Efficiency of Rankine Cycle
+    
 
     eta_ch_A = float(
         config['Electrcial_Storage_Units'][0][list(config['Electrcial_Storage_Units'][0].keys())[0]]["Eta_ch"])  # efficiency loss (charging)
@@ -292,18 +190,14 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
                         "Minimum_SOC"]) / 100  # minimum State of Energy (0.2 = 20%)
     aEmax_A = float(config['Electrcial_Storage_Units'][0][list(config['Electrcial_Storage_Units'][0].keys())[0]][
                         "Maximum_SOC"]) / 100  # maximum State of Energy (0.9 = 90%)
-
+    Et0_A= float(config['Electrcial_Storage_Units'][0][list(config['Electrcial_Storage_Units'][0].keys())[0]]["Initial_SOC"]) # Initial SoC 
+    Cost_ESS_A = float(config['Electrcial_Storage_Units'][0][list(config['Electrcial_Storage_Units'][0].keys())[0]]["Cost_ESS"])
         # ESS_B
     P_B = float(
         config['Electrcial_Storage_Units'][1][list(config['Electrcial_Storage_Units'][1].keys())[0]]["Available_Power"])  # Power Capacity
     E_B = float(
         config['Electrcial_Storage_Units'][1][list(config['Electrcial_Storage_Units'][1].keys())[0]]["Available_Capacity"])  # Energy Capacity
-    try:
-        E_B = E_B * (1 -
-                     config["Electrcial_Storage_Units"][1][list(config['Electrcial_Storage_Units'][1].keys())[0]]["Unit_Specific_Parameters"][
-                         "L_total"])
-    except KeyError:
-        pass
+
     eta_ch_B = float(
         config['Electrcial_Storage_Units'][1][list(config['Electrcial_Storage_Units'][1].keys())[0]]["Eta_ch"])  # efficiency loss (charging)
     eta_dis_B = float(config['Electrcial_Storage_Units'][1][list(config['Electrcial_Storage_Units'][1].keys())[0]][
@@ -314,18 +208,15 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     aEmax_B = float(config['Electrcial_Storage_Units'][1][list(config['Electrcial_Storage_Units'][1].keys())[0]][
                         "Maximum_SOC"]) / 100  # maximum State of Energy (0.9 = 90%)
 
+    Et0_B= float(config['Electrcial_Storage_Units'][1][list(config['Electrcial_Storage_Units'][1].keys())[0]]["Initial_SOC"]) # Initial SoC 
+    Cost_ESS_B = float(config['Electrcial_Storage_Units'][1][list(config['Electrcial_Storage_Units'][1].keys())[0]]["Cost_ESS"])
 
     # ESS_C
     P_C = float(
         config['Electrcial_Storage_Units'][2][list(config['Electrcial_Storage_Units'][2].keys())[0]]["Available_Power"])  # Power Capacity
     E_C = float(
         config['Electrcial_Storage_Units'][2][list(config['Electrcial_Storage_Units'][2].keys())[0]]["Available_Capacity"])  # Energy Capacity
-    try:
-        E_C = E_C * (1 -
-                     config["Electrcial_Storage_Units"][2][list(config['Electrcial_Storage_Units'][2].keys())[0]]["Unit_Specific_Parameters"][
-                         "L_total"])
-    except KeyError:
-        pass
+    
     eta_ch_C = float(
         config['Electrcial_Storage_Units'][2][list(config['Electrcial_Storage_Units'][2].keys())[0]]["Eta_ch"])  # efficiency loss (charging)
     eta_dis_C = float(config['Electrcial_Storage_Units'][2][list(config['Electrcial_Storage_Units'][2].keys())[0]][
@@ -335,20 +226,14 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
                         "Minimum_SOC"]) / 100  # minimum State of Energy (0.2 = 20%)
     aEmax_C = float(config['Electrcial_Storage_Units'][2][list(config['Electrcial_Storage_Units'][2].keys())[0]][
                         "Maximum_SOC"]) / 100  # maximum State of Energy (0.9 = 90%)
+    Et0_C= float(config['Electrcial_Storage_Units'][2][list(config['Electrcial_Storage_Units'][2].keys())[0]]["Initial_SOC"]) # Initial SoC 
+    Cost_ESS_C = float(config['Electrcial_Storage_Units'][2][list(config['Electrcial_Storage_Units'][2].keys())[0]]["Cost_ESS"])
 
     # TESS_A
     P_TA = float(
         config['Thermal_Storage_Units'][0][list(config['Thermal_Storage_Units'][0].keys())[0]]["Available_Power"])  # Power Capacity
     E_TA = float(
         config['Thermal_Storage_Units'][0][list(config['Thermal_Storage_Units'][0].keys())[0]]["Available_Capacity"])  # Energy Capacity
-    try:
-        E_TA = E_TA * (1 -
-                       config["Thermal_Storage_Units"][0][list(config['Thermal_Storage_Units'][0].keys())[0]]["Unit_Specific_Parameters"][
-                           "L_total"])
-    except KeyError:
-        pass
-
-    
     eta_ch_TA = float(
         config['Thermal_Storage_Units'][0][list(config['Thermal_Storage_Units'][0].keys())[0]]["Eta_ch"])  # efficiency loss (charging)
     eta_dis_TA = float(config['Thermal_Storage_Units'][0][list(config['Thermal_Storage_Units'][0].keys())[0]][
@@ -359,7 +244,9 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     aEmax_TA = float(config['Thermal_Storage_Units'][0][list(config['Thermal_Storage_Units'][0].keys())[0]][
         "Maximum_SOC"]) / 100  # maximum State of Energy (0.9 = 90%)
 
-
+    Qt0_A= float(config['Thermal_Storage_Units'][0][list(config['Thermal_Storage_Units'][0].keys())[0]]["Initial_SOC"]) # Initial SoC 
+    Cost_ESS_TA = float(config['Electrcial_Storage_Units'][0][list(config['Electrcial_Storage_Units'][0].keys())[0]]["Cost_ESS"])
+    Cost_RC= float(config['Thermal_to_Electrical_Converters'][0][list(config['Thermal_to_Electrical_Converters'][0].keys())[0]]["Cost_RC"])
     ############################################
     ### Defining the optimization model ###
 
@@ -378,7 +265,7 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     model.zch_A = Var(model.T, domain=Boolean)  # Binary indicating charging
     model.zdis_A = Var(model.T, domain=Boolean)  # Binary indicating discharging
     model.et_A = Var(model.T, domain=NonNegativeReals)  # State of Energy (Charge)
-    model.et0_A = Var(domain=NonNegativeReals)  # Initial State of Energy (Charge)
+    # model.et0_A = Var(domain=NonNegativeReals)  # Initial State of Energy (Charge)
 
     # ESS B Variables
     model.pBt_B = Var(model.T, domain=Reals)  # Basepoint (power)
@@ -387,7 +274,7 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     model.zch_B = Var(model.T, domain=Boolean)  # Binary indicating charging
     model.zdis_B = Var(model.T, domain=Boolean)  # Binary indicating discharging
     model.et_B = Var(model.T, domain=NonNegativeReals)  # State of Energy (Charge)
-    model.et0_B = Var(domain=NonNegativeReals)  # Initial State of Energy (Charge)
+    # model.et0_B = Var(domain=NonNegativeReals)  # Initial State of Energy (Charge)
 
     # ESS C Variables
     model.pBt_C = Var(model.T, domain=Reals)  # Basepoint (power)
@@ -407,7 +294,7 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     model.zqch_A = Var(model.T, domain=Boolean)  # Binary indicating charging
     model.zqdis_A = Var(model.T, domain=Boolean)  # Binary indicating discharging
     model.Qt_A = Var(model.T, domain=NonNegativeReals)  # State of Energy (Charge)
-    model.Qt0_A = Var(domain=NonNegativeReals)  # Initial State of Energy (Charge)
+    # model.Qt0_A = Var(domain=NonNegativeReals)  # Initial State of Energy (Charge)
     #TODO: qt0 and et0: Can be constant 
     # Rankine cycle
     model.q2p = Var(model.T, domain=NonNegativeReals)  # Thermal power covrted to electrical power
@@ -426,12 +313,12 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
             sum(EnPrice[tt - 1] * model.pGrid[tt] *dt for tt in model.T)
             # qGrid= qImport - qExport
             + sum(HeatPrice[tt - 1] * model.qGrid[tt]*dt for tt in model.T)
-            
             + sum(
                 Cost_ESS_A*(model.pBtch_A[tt]+model.pBtdis_A[tt]) 
                 + Cost_ESS_B*(model.pBtch_B[tt]+model.pBtdis_B[tt])
                 + Cost_ESS_C*(model.pBtch_C[tt]+model.pBtdis_C[tt])
-                + Cost_TES_A* (model.qBtch_A[tt] +model.qBtdis_A[tt])
+                + Cost_ESS_TA* (model.qBtch_A[tt] +model.qBtdis_A[tt])
+                + Cost_RC * model.pBt_RC[tt]
                 for tt in model.T
             )
         )
@@ -456,7 +343,25 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
             model.qBt_A[tt] + qDemand[tt-1] 
         )
     model.Thermal_balance = Constraint(model.T, rule=Thermal_balance_rule)
+    # ESS Basepoint Definition (Charging and Discharging) (pBt_i[tt] = pBtch_i[tt] - pBtdis_i[tt])
+    def ESS_pBt_A_def_rule(model, tt):
+        return model.pBt_A[tt] == model.pBtch_A[tt] - model.pBtdis_A[tt]
 
+    model.ESS_pBt_A_def = Constraint(model.T, rule=ESS_pBt_A_def_rule)
+
+    def ESS_pBt_B_def_rule(model, tt):
+        return model.pBt_B[tt] == model.pBtch_B[tt] - model.pBtdis_B[tt]
+
+    model.ESS_pBt_B_def = Constraint(model.T, rule=ESS_pBt_B_def_rule)
+
+    def ESS_pBt_C_def_rule(model, tt):
+        return model.pBt_C[tt] == model.pBtch_C[tt] - model.pBtdis_C[tt]
+
+    model.ESS_pBt_C_def = Constraint(model.T, rule=ESS_pBt_C_def_rule)
+    def TES_qBt_A_def_rule(model, tt):
+        return model.qBt_A[tt] == model.qBtch_A[tt] - model.qBtdis_A[tt]
+
+    model.TES_qBt_A_def = Constraint(model.T, rule=TES_qBt_A_def_rule)
     # ESS Add bound on charging variable (pBtch_t <= zch_i[tt] * P_i)
     def ESS_pBtch_A_bound_rule(model, tt):
         return model.pBtch_A[tt] <= model.zch_A[tt] * P_A
@@ -472,18 +377,21 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
         return model.pBtch_C[tt] <= model.zch_C[tt] * P_C
 
     model.ESS_pBtch_C_bound = Constraint(model.T, rule=ESS_pBtch_C_bound_rule)
+    def TES_zqBtch_A_bound_rule(model, tt):
+        return model.qBtch_A[tt] <= model.zqch_A[tt] * P_TA
 
+    model.TES_zqBtch_A_bound = Constraint(model.T, rule=TES_zqBtch_A_bound_rule)
     # ESS Add bound on discharging variable (pBtdis_t <= zdis_i[tt] * P_i)
     def ESS_pBtdis_A_bound_rule(model, tt):
         return model.pBtdis_A[tt] <= model.zdis_A[tt] * P_A
 
     model.ESS_pBtdis_A_bound = Constraint(model.T, rule=ESS_pBtdis_A_bound_rule)
-
+    
     def ESS_pBtdis_B_bound_rule(model, tt):
         return model.pBtdis_B[tt] <= model.zdis_B[tt] * P_B
 
     model.ESS_pBtdis_B_bound = Constraint(model.T, rule=ESS_pBtdis_B_bound_rule)
-
+    
     def ESS_pBtdis_C_bound_rule(model, tt):
         return model.pBtdis_C[tt] <= model.zdis_C[tt] * P_C
 
@@ -504,7 +412,10 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
         return model.zch_C[tt] + model.zdis_C[tt] <= 1
 
     model.ESS_zchdis_C = Constraint(model.T, rule=ESS_zchdis_C_rule)
+    def TES_zqchdis_A_rule(model, tt):
+        return model.zqch_A[tt] + model.zqdis_A[tt] <= 1
 
+    model.TES_zqchdis_A = Constraint(model.T, rule=TES_zqchdis_A_rule)
     #### ======================= ####
 
     # ESS State of Charge (Energy)
@@ -542,7 +453,7 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
 
     # Constraint for first hour
     def ESS_SoE_1_A_def_rule(model):
-        return model.et_A[1] == (1 - static_A) * model.et0_A \
+        return model.et_A[1] == (1 - static_A) * Et0_A*E_A \
             + eta_ch_A * model.pBtch_A[1] * dt \
             - (1 / eta_dis_A) * model.pBtdis_A[1] * dt \
             # - Loss_A * model.pRt_A[1]*dt
@@ -550,7 +461,7 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     model.ESS_SoE_1_A_def = Constraint(rule=ESS_SoE_1_A_def_rule)
 
     def ESS_SoE_1_B_def_rule(model):
-        return model.et_B[1] == (1 - static_B) * model.et0_B \
+        return model.et_B[1] == (1 - static_B) * Et0_B*E_B \
             + eta_ch_B * model.pBtch_B[1] * dt \
             - (1 / eta_dis_B) * model.pBtdis_B[1] * dt \
             # - Loss_B * model.pRt_B[1]*dt
@@ -558,7 +469,7 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     model.ESS_SoE_1_B_def = Constraint(rule=ESS_SoE_1_B_def_rule)
 
     def ESS_SoE_1_C_def_rule(model):
-        return model.et_C[1] == (1 - static_C) * model.et0_C \
+        return model.et_C[1] == (1 - static_C) * Et0_C*E_C  \
             + eta_ch_C * model.pBtch_C[1] * dt \
             - (1 / eta_dis_C) * model.pBtdis_C[1] * dt \
             # - Loss_C * model.pRt_C[1]*dt
@@ -567,17 +478,17 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
 
     # Set Initial SoE equal to Final SoE (avoid discharging the battery at the end of day) (et0_i = et_i[TimePeriods])
     def InitSoE_A_rule(model):
-        return model.et0_A == model.et_A[TimePeriods]
+        return Et0_A*E_A == model.et_A[TimePeriods]
 
     model.InitSoE_A = Constraint(rule=InitSoE_A_rule)
 
     def InitSoE_B_rule(model):
-        return model.et0_B == model.et_B[TimePeriods]
+        return Et0_B*E_B  == model.et_B[TimePeriods]
 
     model.InitSoE_B = Constraint(rule=InitSoE_B_rule)
 
     def InitSoE_C_rule(model):
-        return model.et0_C == model.et_C[TimePeriods]
+        return Et0_C*E_C  == model.et_C[TimePeriods]
 
     model.InitSoE_C = Constraint(rule=InitSoE_C_rule)
 
@@ -625,13 +536,13 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     # Constraints for first hour
     # Qt_i[1] = qt0_i*(1-static_i)+eta_ch_i*qBtch_i[1]*dt-(1/eta_dis_i)*qBtdis_i[1]*dt-Loss_i*qRt_i[1]*dt
     def ESS_qSoE_1_A_def_rule(model):
-        return model.Qt_A[1] == (1 - static_TA) * model.Qt0_A \
+        return model.Qt_A[1] == (1 - static_TA) * Qt0_A *E_TA\
             + eta_ch_TA * model.qBtch_A[1] * dt \
             - (1 / eta_dis_TA) * model.qBtdis_A[1] * dt \
             # - Loss_TA * model.qRt_A[1]*dt
     model.ESS_qSoE_1_A_def = Constraint(rule=ESS_qSoE_1_A_def_rule)
     def InitSoE_A_rule(model):
-        return model.Qt0_A == model.Qt_A[TimePeriods]
+        return Qt0_A *E_TA == model.Qt_A[TimePeriods]
     model.InitSoE_A = Constraint(rule=InitSoE_A_rule)
     def SoE_A_min_limit_rule(model, tt):
         return model.Qt_A[tt] >= aEmin_TA * E_TA

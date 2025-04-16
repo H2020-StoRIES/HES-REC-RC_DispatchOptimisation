@@ -33,10 +33,11 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Run_Daily_Schedule_Optimization, initialize_config, default_config
 ### User Settings ###
 Config_file = "config_template.yaml"
+Mapping_file= "variable_map.py"
 Manual_prices = None #pd.DataFrame({"EnPrice[€/kWh]": [101, 102, 50, 103, 104], "RegPrice[€/kW]": [200, 0, 0, 0, 0]})
 plot_results = True
 store_results = True
-plot_variables = ['pEt', 'pRt', 'pEt_A', 'pRt_A', 'et_A', 'pEt_B', 'pRt_B', 'et_B', 'pEt_C', 'pRt_C', 'et_C']
+plot_variables = ['pBt_A',  'et_A', 'pBt_B',  'et_B', 'pBt_C',  'et_C']
 scale_plotted_data = False
 
 
@@ -77,53 +78,51 @@ logging.info(f"   Yearly cost: {round(Daily_results[1]['Cost_upper_bound']*365, 
 ### Store detailed results ###
 Prices = pd.read_csv(os.path.join("./InputData/Prices/", config["Sizing_Params"]["Price_file"])) if Manual_prices is None else Manual_prices
 Daily_results_df = pd.concat([Prices, pd.DataFrame({key: Daily_results[1][key] for key in plot_variables} | {})], axis=1)
+print (Daily_results_df)
+print('********',Daily_results)
+# if store_results:
+#     results_filename = f"{int(time())}_DailyScheduleOpt_results.csv"
+#     logging.info(f"Saving results to {results_filename}...")
+#     Daily_results_df.to_csv(rf"./Results/DailyScheduleOptimization/{results_filename}", index=False)
 
-if store_results:
-    results_filename = f"{int(time())}_DailyScheduleOpt_results.csv"
-    logging.info(f"Saving results to {results_filename}...")
-    Daily_results_df.to_csv(rf"./Results/DailyScheduleOptimization/{results_filename}", index=False)
 
+# ### Plot some results ###
+# if plot_results:
+#     logging.info(f"Plotting results...")
+#     if scale_plotted_data:
+#         scaler = MinMaxScaler()
+#         # Daily_results_df = pd.DataFrame(scaler.fit_transform(Daily_results_df.to_numpy()), columns=Daily_results_df.columns)
 
-### Plot some results ###
-if plot_results:
-    logging.info(f"Plotting results...")
-    if scale_plotted_data:
-        scaler = MinMaxScaler()
-        # Daily_results_df = pd.DataFrame(scaler.fit_transform(Daily_results_df.to_numpy()), columns=Daily_results_df.columns)
+#     # Set up plot
+#     fig, (ax11, ax21, ax31, ax41, ax51) = plt.subplots(5, 1, sharex=True)
+#     ax11.xaxis.set_major_locator(MaxNLocator(integer=True))
+#     ax11.grid()
+#     ax21.grid()
+#     ax31.grid()
+#     ax41.grid()
+#     ax51.grid()
 
-    # Set up plot
-    fig, (ax11, ax21, ax31, ax41, ax51) = plt.subplots(5, 1, sharex=True)
-    ax11.xaxis.set_major_locator(MaxNLocator(integer=True))
-    ax11.grid()
-    ax21.grid()
-    ax31.grid()
-    ax41.grid()
-    ax51.grid()
+#     # Prices
+#     ax11.plot(Daily_results_df["EnPrice[€/kWh]"])
+#     ax11.plot(Daily_results_df["RegPrice[€/kW]"])
+#     ax11.legend(['Energy prices', 'Regulation prices'])
+#     ax11.set_title('Prices')
 
-    # Prices
-    ax11.plot(Daily_results_df["EnPrice[€/kWh]"])
-    ax11.plot(Daily_results_df["RegPrice[€/kW]"])
-    ax11.legend(['Energy prices', 'Regulation prices'])
-    ax11.set_title('Prices')
+   
 
-    # HESS
-    ax21.plot(Daily_results_df[[col for col in ['pEt', 'pRt'] if col in plot_variables]])
-    ax21.legend([col for col in ['pEt', 'pRt'] if col in plot_variables])
-    ax21.set_title('HESS')
+#     # ESS A
+#     ax31.plot(Daily_results_df[[col for col in Daily_results_df.columns if "_A" in col]])
+#     ax31.legend([col for col in Daily_results_df.columns if "_A" in col])
+#     ax31.set_title('ESS A')
 
-    # ESS A
-    ax31.plot(Daily_results_df[[col for col in Daily_results_df.columns if "_A" in col]])
-    ax31.legend([col for col in Daily_results_df.columns if "_A" in col])
-    ax31.set_title('ESS A')
+#     # ESS B
+#     ax41.plot(Daily_results_df[[col for col in Daily_results_df.columns if "_B" in col]])
+#     ax41.legend([col for col in Daily_results_df.columns if "_B" in col])
+#     ax41.set_title('ESS B')
 
-    # ESS B
-    ax41.plot(Daily_results_df[[col for col in Daily_results_df.columns if "_B" in col]])
-    ax41.legend([col for col in Daily_results_df.columns if "_B" in col])
-    ax41.set_title('ESS B')
+#     # ESS C
+#     ax51.plot(Daily_results_df[[col for col in Daily_results_df.columns if "_C" in col]])
+#     ax51.legend([col for col in Daily_results_df.columns if "_C" in col])
+#     ax51.set_title('ESS C')
 
-    # ESS C
-    ax51.plot(Daily_results_df[[col for col in Daily_results_df.columns if "_C" in col]])
-    ax51.legend([col for col in Daily_results_df.columns if "_C" in col])
-    ax51.set_title('ESS C')
-
-    plt.show()
+#     plt.show()

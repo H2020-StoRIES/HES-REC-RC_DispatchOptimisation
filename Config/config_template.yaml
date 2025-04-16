@@ -12,44 +12,35 @@ Sizing_Params:
     Price_file: "price_day12.csv"
 Electrcial_Storage_Units:
   - Lithium_Battery:
-      Available_Capacity: 100
-      Available_Power: 50
-      Min_Limit_Power: 5
-      Max_Limit_Power: 100
+      Available_Capacity: 2575.125
+      Available_Power: 450
       Eta_ch: 0.95
       Eta_dis: 0.95
-      Static: 0.01
+      Static: 0
       Initial_SOC: 0.5
       Maximum_SOC: 1.0
-      Minimum_SOC: 0.2
-      Loss_coef_a: 0.001
-      Loss_coef_b: 0.002
+      Minimum_SOC: 0.20
+      Cost_ESS: 0.04
   - Super_Capacitor:
       Available_Capacity: 100
       Available_Power: 50
-      Min_Limit_Power: 5
-      Max_Limit_Power: 100
       Eta_ch: 0.95
       Eta_dis: 0.95
-      Static: 0.01
+      Static: 0
       Initial_SOC: 0.5
       Maximum_SOC: 1.0
-      Minimum_SOC: 0.2
-      Loss_coef_a: 0.001
-      Loss_coef_b: 0.002
+      Minimum_SOC: 0.20
+      Cost_ESS: 0.04
   - Pumped_Hydro:
       Available_Capacity: 100
       Available_Power: 50
-      Min_Limit_Power: 5
-      Max_Limit_Power: 100
       Eta_ch: 0.95
       Eta_dis: 0.95
-      Static: 0.01
+      Static: 0
       Initial_SOC: 0.5
       Maximum_SOC: 1.0
-      Minimum_SOC: 0.2
-      Loss_coef_a: 0.001
-      Loss_coef_b: 0.002
+      Minimum_SOC: 0.20
+      Cost_ESS: 0.04
 
 Thermal_Storage_Units:
   - PCM:
@@ -57,17 +48,37 @@ Thermal_Storage_Units:
       Available_Power: 30
       Eta_ch: 0.9
       Eta_dis: 0.9
+      static: 0
       Initial_SOC: 0.5
-      Gamma: 0.01
-      Loss_coef_a: 0.001
-      Loss_coef_b: 0.002
+      Gamma: 0.010
+      Cost_ESS: 0.04
 Thermal_to_Electrical_Converters:
   - Ranking_Cycle:
       Eta_RC: 0.7
+      Cost_RC: 0.04
 General:
-  pLoad:  100
-  qDemand: 100
-  pGrid_max: 1000000
-  qGrid_max: 1000000
-  HeatPrice: None
-  EnPrice: None
+    pGen: [100, 100, 100, 100, 100, 100, 100, 100,
+          100, 100, 100, 100, 100, 100, 100, 100,
+          100, 100, 100, 100, 100, 100, 100, 100]
+
+    qGen: [100, 100, 100, 100, 100, 100, 100, 100,
+          100, 100, 100, 100, 100, 100, 100, 100,
+          100, 100, 100, 100, 100, 100, 100, 100]
+    pLoad:  [100, 100, 100, 100, 100, 100, 100, 100,
+          100, 100, 100, 100, 100, 100, 100, 100,
+          100, 100, 100, 100, 100, 100, 100, 100]
+    qDemand: [100, 100, 100, 100, 100, 100, 100, 100,
+          100, 100, 100, 100, 100, 100, 100, 100,
+          100, 100, 100, 100, 100, 100, 100, 100]
+    HeatPrice:  [100, 100, 100, 100, 100, 100, 100, 100,
+          100, 100, 100, 100, 100, 100, 100, 100,
+          100, 100, 100, 100, 100, 100, 100, 100]
+    EnPrice: [100, 100, 100, 100, 100, 100, 100, 100,
+          100, 100, 100, 100, 100, 100, 100, 100,
+          100, 100, 100, 100, 100, 100, 100, 100]
+    pGrid_max: [100, 100, 100, 100, 100, 100, 100, 100,
+          100, 100, 100, 100, 100, 100, 100, 100,
+          100, 100, 100, 100, 100, 100, 100, 100]
+    qGrid_max: [100, 100, 100, 100, 100, 100, 100, 100,
+          100, 100, 100, 100, 100, 100, 100, 100,
+          100, 100, 100, 100, 100, 100, 100, 100]
