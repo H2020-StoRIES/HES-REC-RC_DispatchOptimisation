@@ -1,18 +1,12 @@
-Name: Simulation_1
-Comments: Configuration for HESS optimization
-Timeseries:
-  Input_File: path/to/timeseries.csv
 Execution:
   Real_Time: false
   End_Time: 86400
   Minimum_Resolution: 3600
   TimePeriods: 24
   dt: 1
-Sizing_Params:
-    Price_file: "price_day12.csv"
 Electrcial_Storage_Units:
   - Lithium_Battery:
-      Available_Capacity: 2575.125
+      Available_Capacity_Per_ESS: 2575.125
       Available_Power: 450
       Eta_ch: 0.95
       Eta_dis: 0.95
@@ -21,8 +15,12 @@ Electrcial_Storage_Units:
       Maximum_SOC: 1.0
       Minimum_SOC: 0.20
       Cost_ESS: 0.04
+      pBt: [0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0]
+      Ness: 0
   - Super_Capacitor:
-      Available_Capacity: 100
+      Available_Capacity_Per_ESS: 100
       Available_Power: 50
       Eta_ch: 0.95
       Eta_dis: 0.95
@@ -31,8 +29,12 @@ Electrcial_Storage_Units:
       Maximum_SOC: 1.0
       Minimum_SOC: 0.20
       Cost_ESS: 0.04
+      pBt: [0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0]
+      Ness: 0
   - Pumped_Hydro:
-      Available_Capacity: 100
+      Available_Capacity_Per_ESS: 100
       Available_Power: 50
       Eta_ch: 0.95
       Eta_dis: 0.95
@@ -41,10 +43,13 @@ Electrcial_Storage_Units:
       Maximum_SOC: 1.0
       Minimum_SOC: 0.20
       Cost_ESS: 0.04
-
+      pBt: [0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0]
+      Ness: 0
 Thermal_Storage_Units:
   - PCM:
-      Available_Capacity: 100
+      Available_Capacity_Per_ESS: 100
       Available_Power: 30
       Eta_ch: 0.9
       Eta_dis: 0.9
@@ -52,10 +57,17 @@ Thermal_Storage_Units:
       Initial_SOC: 0.5
       Gamma: 0.010
       Cost_ESS: 0.04
+      qBt: [0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0]
+      Ness: 0
 Thermal_to_Electrical_Converters:
   - Ranking_Cycle:
       Eta_RC: 0.7
       Cost_RC: 0.04
+      pBt: [0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0]
 General:
     pGen: [100, 100, 100, 100, 100, 100, 100, 100,
           100, 100, 100, 100, 100, 100, 100, 100,

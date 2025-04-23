@@ -32,12 +32,12 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Run_Daily_Schedule_Optimization, initialize_config, default_config
 ### User Settings ###
-Config_file = "config_template.yaml"
+Config_file = "config_scenario_run_01_1.yaml"
 Mapping_file= "variable_map.py"
 Manual_prices = None #pd.DataFrame({"EnPrice[€/kWh]": [101, 102, 50, 103, 104], "RegPrice[€/kW]": [200, 0, 0, 0, 0]})
 plot_results = True
 store_results = True
-plot_variables = ['pBt_A',  'et_A', 'pBt_B',  'et_B', 'pBt_C',  'et_C']
+plot_variables = ['pBt_A',  'et_A', 'pBt_C',  'et_C', 'qBt_A','Qt_A', 'pGrid','qGrid', 'q2p', 'pBt_RC']
 scale_plotted_data = False
 
 
@@ -76,8 +76,8 @@ logging.info(f"   Yearly cost: {round(Daily_results[1]['Cost_upper_bound']*365, 
 
 
 ### Store detailed results ###
-Prices = pd.read_csv(os.path.join("./InputData/Prices/", config["Sizing_Params"]["Price_file"])) if Manual_prices is None else Manual_prices
-Daily_results_df = pd.concat([Prices, pd.DataFrame({key: Daily_results[1][key] for key in plot_variables} | {})], axis=1)
+# Prices = pd.read_csv(os.path.join("./InputData/Prices/", config["Sizing_Params"]["Price_file"])) if Manual_prices is None else Manual_prices
+Daily_results_df = [pd.DataFrame({key: Daily_results[1][key] for key in plot_variables} )]
 print (Daily_results_df)
 print('********',Daily_results)
 # if store_results:
