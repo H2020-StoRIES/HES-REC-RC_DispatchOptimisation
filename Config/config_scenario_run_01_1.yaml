@@ -1,3 +1,4 @@
+Comments: Includes only required parameters from optimization formulation.
 Electrcial_Storage_Units:
 - Lithium_Battery:
     Available_Capacity_Per_ESS: 85.0
@@ -5,44 +6,50 @@ Electrcial_Storage_Units:
     Cost_ESS: 0.002
     Eta_ch: 0.9
     Eta_dis: 0.9
+    Gamma: 1
     Initial_SOC: 0.5
+    Max_Limit_Energy_Capacity: 40
     Maximum_SOC: 0.8
+    Min_Limit_Energy_Capacity: 0.0001
     Minimum_SOC: 0.2
     Ness: 83
     Static: 0.0
     pBt:
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
+    - 2351666.6666666665
+    - -0.0
+    - -0.0
+    - -4703333.333333333
+    - -0.0
+    - -0.0
+    - -0.0
+    - 4703333.333333333
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -4703333.333333333
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - 4703333.333333333
+    - -0.0
+    - -2351666.6666666665
+    - 7055000.0
 - Super_Capacitor:
     Available_Capacity_Per_ESS: 0.0
     Available_Power: 115.0
     Cost_ESS: 0.0
     Eta_ch: 0.9
     Eta_dis: 0.9
+    Gamma: 1
     Initial_SOC: 0.5
+    Max_Limit_Energy_Capacity: 0.5
     Maximum_SOC: 0.8
+    Min_Limit_Energy_Capacity: 0.0001
     Minimum_SOC: 0.2
     Ness: 1.0
     Static: 0.0
@@ -74,39 +81,41 @@ Electrcial_Storage_Units:
 - Pumped_Hydro:
     Available_Capacity_Per_ESS: 185.0
     Available_Power: 50.0
-    Cost_ESS: 0.001
+    Cost_ESS: 0.0011
     Eta_ch: 0.65
     Eta_dis: 0.65
     Initial_SOC: 0.5
+    Max_Limit_Energy_Capacity: 100
     Maximum_SOC: 0.8
+    Min_Limit_Energy_Capacity: 0.0001
     Minimum_SOC: 0.2
     Ness: 13.0
     Static: 0.0
     pBt:
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
+    - 650000.0
+    - 460000.0
+    - -0.0
+    - -650000.0
+    - -650000.0
+    - -0.0
+    - 650000.0
+    - 650000.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -650000.0
+    - -270000.0
+    - -650000.0
+    - -650000.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - 460000.0
+    - 650000.0
+    - 650000.0
+    - -650000.0
+    - 650000.0
 Execution:
   End_Time: 86400.0
   Minimum_Resolution: 3600.0
@@ -114,6 +123,9 @@ Execution:
   TimePeriods: 24.0
   dt: 1.0
 General:
+  CI_el: 0.354
+  CI_th: 0.202
+  CO2Price: 0.5
   EnPrice:
   - - 0
     - 0.254685102
@@ -213,6 +225,31 @@ General:
   - 0.0
   - 0.0
   - 0.0
+  pGrid:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
   pGrid_max: 10000000000000.0
   pLoad:
   - 505810.7253089076
@@ -265,15 +302,15 @@ General:
   - 151926.30853994493
   - 32004.820936639087
   qGen:
-  - 98083.89
-  - 98254.07
-  - 98495.32
-  - 98610.61
-  - 98669.99
-  - 98738.7
-  - 74813.9
-  - 50664.3
-  - 225422.769057549
+  - 101916.11
+  - 101745.93
+  - 101504.68
+  - 101389.39
+  - 101330.01
+  - 101261.3
+  - 125186.1
+  - 149335.7
+  - 321591.16905754904
   - 192577.747518669
   - 280215.557156987
   - 335620.374736651
@@ -282,52 +319,83 @@ General:
   - 345914.245528428
   - 252853.26108537597
   - 261068.51136644598
-  - 153268.578032344
-  - 96363.79
-  - 96633.79
-  - 97594.36
-  - 97972.7
-  - 98017.39
-  - 98136.81
+  - 161226.93803234398
+  - 103636.21
+  - 103366.21
+  - 102405.64
+  - 102027.3
+  - 101982.61
+  - 101863.19
+  qGrid:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
   qGrid_max: 10000000000000.0
+  w: 1.0
+Name: Minimal configuration for HESS optimization
+Sizing_Params:
+  Price_file: price_day12.csv
 Thermal_Storage_Units:
 - PCM:
     Available_Capacity_Per_ESS: 150.0
     Available_Power: 50.0
-    Cost_ESS: 0.003
+    Cost_ESS: 0.00615
     Eta_ch: 80.0
     Eta_dis: 80.0
     Gamma: 0.01
     Initial_SOC: 0.5
+    Max_Limit_Energy_Capacity: 0.5
     Maximum_SOC: 0.8
+    Min_Limit_Energy_Capacity: 0.0001
     Minimum_SOC: 0.2
     Ness: 28
     Static: 0.0
     qBt:
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
     static: 0
 Thermal_to_Electrical_Converters:
 - Ranking_Cycle:
@@ -359,3 +427,58 @@ Thermal_to_Electrical_Converters:
     - 0
     - 0
     - 0
+    pBt_RC:
+    - -14883.121799999997
+    - -14818.453399999991
+    - -14726.778399999996
+    - -14682.9682
+    - -14660.403799999998
+    - -4623.9634214876005
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -26546.180244077153
+    q2p:
+    - -39166.10999999999
+    - -38995.92999999998
+    - -38754.679999999986
+    - -38639.39
+    - -38580.009999999995
+    - -12168.324793388421
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -0.0
+    - -69858.36906336092
+Timeseries:
+  Input_File: null
+  Power_reserve_period: 60
+  Power_reserve_schedule: null
+  Scaling: 1

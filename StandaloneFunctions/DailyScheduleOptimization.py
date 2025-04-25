@@ -4,12 +4,7 @@ This script can be used to run the daily schedule optimization standalone.
 Usage:
     Define an optimization run (config, prices,...) in the user settings
     and run the script. Storage unit characteristic are defined in the config.
-    Prices can either be manually defined or provided as csv by defining the
-    path to the data file in the config.
-
-Output:
-    Shows result summary in the console and, if selected in the user settings,
-    plots and/or stores detailed results.
+    
 
 Authors:
     Nils Müller
@@ -30,7 +25,7 @@ import logging
 from time import time
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import Run_Daily_Schedule_Optimization, initialize_config, default_config
+from utils import Run_Daily_Schedule_Optimization, initialize_config, default_config, Result_Update
 ### User Settings ###
 Config_file = "config_scenario_run_01_1.yaml"
 Mapping_file= "variable_map.py"
@@ -64,8 +59,8 @@ config = initialize_config(default_config, user_config)
 
 
 ### Run Daily optimization problem ###
-logging.info(f"Running daily schedule optimization with {'prices from config...' if Manual_prices is None else 'manually defined prices...'}")
-Daily_results = Run_Daily_Schedule_Optimization(config=config, manual_prices=Manual_prices)
+logging.info(f"Running daily schedule optimization ...")
+Daily_results = Run_Daily_Schedule_Optimization(config=config)
 
 
 ### Show result summary in console ###
@@ -76,16 +71,17 @@ logging.info(f"   Yearly cost: {round(Daily_results[1]['Cost_upper_bound']*365, 
 
 
 ### Store detailed results ###
-# Prices = pd.read_csv(os.path.join("./InputData/Prices/", config["Sizing_Params"]["Price_file"])) if Manual_prices is None else Manual_prices
-Daily_results_df = [pd.DataFrame({key: Daily_results[1][key] for key in plot_variables} )]
+Daily_results_df = pd.DataFrame({key: Daily_results[1][key] for key in plot_variables} )
 print (Daily_results_df)
 print('********',Daily_results)
-# if store_results:
-#     results_filename = f"{int(time())}_DailyScheduleOpt_results.csv"
-#     logging.info(f"Saving results to {results_filename}...")
-#     Daily_results_df.to_csv(rf"./Results/DailyScheduleOptimization/{results_filename}", index=False)
 
-
+results_filename = f"{int(time())}_DailyScheduleOpt_results.csv"
+logging.info(f"Saving results to {results_filename}...")
+Daily_results_df.to_csv(f"./Results/DailyScheduleOptimization/{results_filename}")
+config_updated= Result_Update(config, Daily_results[1])
+print(config_updated['Electrcial_Storage_Units'][0][list(config['Electrcial_Storage_Units'][0].keys())[0]]["pBt"])
+with open(os.path.join("./Config", Config_file), 'w') as file:
+    yaml.dump(config_updated,file)
 # ### Plot some results ###
 # if plot_results:
 #     logging.info(f"Plotting results...")

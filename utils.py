@@ -145,7 +145,7 @@ def initialize_config(default_config, user_config):
 
     return updated_config
 
-def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
+def Run_Daily_Schedule_Optimization(config, day=0):
     TimePeriods = int(config['Execution']['TimePeriods'])
     dt = float(config['Execution']['dt'])
     pGen = config['General']['pGen']     # Electrical generation
@@ -160,6 +160,12 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     HeatPrice =  config['General']['HeatPrice']   # Heat price
     pGrid_max = config['General']['pGrid_max'] # Max electrical grid exchange
     qGrid_max = config['General']['qGrid_max']  # Max thermal grid exchange
+    w= config['General']['w']  #objective function weight
+    CI_th= config['General']['CI_th'] # CO2 intensity from thermal import
+    CI_el= config['General']['CI_el'] # CO2 intensity from electrical import
+    CO2Price= config['General']['CO2Price'] # CO2 price
+    print('PGen',pGen)
+    print('PLoad',pLoad)
     
     eta_RC = float(
         config['Thermal_to_Electrical_Converters'][0][list(config['Thermal_to_Electrical_Converters'][0].keys())[0]]["Eta_RC"])  # Efficiency of Rankine Cycle
@@ -168,7 +174,8 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
         config['Electrcial_Storage_Units'][0][list(config['Electrcial_Storage_Units'][0].keys())[0]]["Available_Power"]*config['Electrcial_Storage_Units'][0][list(config['Electrcial_Storage_Units'][0].keys())[0]]["Ness"])  # Power Capacity
     E_A = float(
         config['Electrcial_Storage_Units'][0][list(config['Electrcial_Storage_Units'][0].keys())[0]]["Available_Capacity_Per_ESS"]*config['Electrcial_Storage_Units'][0][list(config['Electrcial_Storage_Units'][0].keys())[0]]["Ness"])  # Energy Capacity
-    
+    print('P_A',P_A)
+    print('E_A',E_A)
     
     eta_ch_A = float(
         config['Electrcial_Storage_Units'][0][list(config['Electrcial_Storage_Units'][0].keys())[0]]["Eta_ch"])  # efficiency loss (charging)
@@ -298,7 +305,7 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
 
     #             )
     def obj_rule(model):
-        return (
+        return w*(
             # TODO: Check convention: pGrid= pImport - pExport 
             sum(EnPrice[tt - 1] * model.pGrid[tt]  for tt in model.T)
             # qGrid= qImport - qExport
@@ -311,7 +318,10 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
                 + Cost_RC * model.pBt_RC[tt]
                 for tt in model.T
             )
-        )
+        )+ (1 - w) * CO2Price * (
+    sum(CI_th * model.qGrid[tt] for tt in model.T) #TODO: Should be replaced with q import and p import
+    + sum(CI_el * model.pGrid[tt] for tt in model.T)
+    )
     model.obj = Objective(rule=obj_rule, sense=minimize)
 
     print('EnPrice:', EnPrice,
@@ -340,7 +350,7 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     def Thermal_balance_rule(model, tt):
         return (
             qGen[tt-1] + model.qGrid[tt] ==
-            # model.qBt_A[tt] +
+            model.qBt_A[tt] +
             qDemand[tt-1] 
         )
     model.Thermal_balance = Constraint(model.T, rule=Thermal_balance_rule)
@@ -426,8 +436,8 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
         if tt == 1:
             return Constraint.Skip
         return model.et_A[tt] == (1 - static_A) * model.et_A[tt - 1] \
-            + eta_ch_A * model.pBtch_A[tt] * dt \
-            - (1 / eta_dis_A) * model.pBtdis_A[tt] * dt \
+            + eta_ch_A * model.pBtch_A[tt-1] * dt \
+            - ( eta_dis_A) * model.pBtdis_A[tt-1] * dt \
             # - Loss_A * model.pRt_A[tt]*dt
 
     model.ESS_SoE_A_def = Constraint(model.T, rule=ESS_SoE_A_def_rule)
@@ -436,8 +446,8 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
 #     #     if tt == 1:
 #     #         return Constraint.Skip
 #     #     return model.et_B[tt] == (1 - static_B) * model.et_B[tt - 1] \
-#     #         + eta_ch_B * model.pBtch_B[tt] * dt \
-#     #         - (1 / eta_dis_B) * model.pBtdis_B[tt] * dt \
+#     #         + eta_ch_B * model.pBtch_B[tt-1] * dt \
+#     #         - (eta_dis_B) * model.pBtdis_B[tt-1] * dt \
 #     #         # - Loss_B * model.pRt_B[tt]*dt
 
 #     # model.ESS_SoE_B_def = Constraint(model.T, rule=ESS_SoE_B_def_rule)
@@ -446,8 +456,8 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
         if tt == 1:
             return Constraint.Skip
         return model.et_C[tt] == (1 - static_C) * model.et_C[tt - 1] \
-            + eta_ch_C * model.pBtch_C[tt] * dt \
-            - (1 / eta_dis_C) * model.pBtdis_C[tt] * dt \
+            + eta_ch_C * model.pBtch_C[tt-1] * dt \
+            - (eta_dis_C) * model.pBtdis_C[tt-1] * dt \
             # - Loss_C * model.pRt_C[tt]*dt
 
     model.ESS_SoE_C_def = Constraint(model.T, rule=ESS_SoE_C_def_rule)
@@ -455,33 +465,49 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     # Constraint for first hour
     def ESS_SoE_1_A_def_rule(model):
         return model.et_A[1] == (1 - static_A) * Et0_A*E_A \
-            + eta_ch_A * model.pBtch_A[1] * dt \
-            - (1 / eta_dis_A) * model.pBtdis_A[1] * dt \
-            # - Loss_A * model.pRt_A[1]*dt
+            # + eta_ch_A * model.pBtch_A[1] * dt \
+            # - ( eta_dis_A) * model.pBtdis_A[1] * dt \
+            # # - Loss_A * model.pRt_A[1]*dt
 
     model.ESS_SoE_1_A_def = Constraint(rule=ESS_SoE_1_A_def_rule)
 
 #     # def ESS_SoE_1_B_def_rule(model):
 #     #     return model.et_B[1] == (1 - static_B) * Et0_B*E_B \
 #     #         + eta_ch_B * model.pBtch_B[1] * dt \
-#     #         - (1 / eta_dis_B) * model.pBtdis_B[1] * dt \
+#     #         - ( eta_dis_B) * model.pBtdis_B[1] * dt \
 #     #         # - Loss_B * model.pRt_B[1]*dt
 
 #     # model.ESS_SoE_1_B_def = Constraint(rule=ESS_SoE_1_B_def_rule)
     print(Et0_A,Et0_C,Qt0_A,E_A,E_C,E_TA)
     def ESS_SoE_1_C_def_rule(model):
         return model.et_C[1] == (1 - static_C) * Et0_C*E_C  \
-            + eta_ch_C * model.pBtch_C[1] * dt \
-            - (1 / eta_dis_C) * model.pBtdis_C[1] * dt \
-            # - Loss_C * model.pRt_C[1]*dt
+            # + eta_ch_C * model.pBtch_C[1] * dt \
+            # - (eta_dis_C) * model.pBtdis_C[1] * dt \
+            # # - Loss_C * model.pRt_C[1]*dt
 
     model.ESS_SoE_1_C_def = Constraint(rule=ESS_SoE_1_C_def_rule)
+    def ESS_qSoE_A_def_rule(model, tt):
+        if tt == 1:
+            return Constraint.Skip
+        return model.Qt_A[tt] == (1 - static_TA) * model.Qt_A[tt - 1] \
+            + eta_ch_TA * model.qBtch_A[tt-1] * dt \
+            - (eta_dis_TA) * model.qBtdis_A[tt-1] * dt \
+            # - Loss_TA * model.qRt_A[tt]*dt
+    model.ESS_qSoE_A_def = Constraint(model.T, rule=ESS_qSoE_A_def_rule)
+    # Constraints for first hour
+    # Qt_i[1] = qt0_i*(1-static_i)+eta_ch_i*qBtch_i[1]*dt-(eta_dis_i)*qBtdis_i[1]*dt-Loss_i*qRt_i[1]*dt
+    def ESS_qSoE_1_A_def_rule(model):
+        return model.Qt_A[1] ==  Qt0_A *E_TA
+        # return model.Qt_A[1] == (1 - static_TA) * Qt0_A *E_TA\
+        #     + eta_ch_TA * model.qBtch_A[1] * dt \
+        #     - (eta_dis_TA) * model.qBtdis_A[1] * dt \
+        #     # - Loss_TA * model.qRt_A[1]*dt
+    model.ESS_qSoE_1_A_def = Constraint(rule=ESS_qSoE_1_A_def_rule)
 
 #     # Set Initial SoE equal to Final SoE (avoid discharging the battery at the end of day) (et0_i = et_i[TimePeriods])
 #     # TODO: Temporary
     def InitSoE_A_rule(model):
         return Et0_A*E_A == model.et_A[TimePeriods]
-
     model.InitSoE_A = Constraint(rule=InitSoE_A_rule)
 
     # def InitSoE_B_rule(model):
@@ -526,22 +552,7 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
     model.SoE_C_max_limit = Constraint(model.T, rule=SoE_C_max_limit_rule)
 
     
-    def ESS_qSoE_A_def_rule(model, tt):
-        if tt == 1:
-            return Constraint.Skip
-        return model.Qt_A[tt] == (1 - static_TA) * model.Qt_A[tt - 1] \
-            + eta_ch_TA * model.qBtch_A[tt] * dt \
-            - (1 / eta_dis_TA) * model.qBtdis_A[tt] * dt \
-            # - Loss_TA * model.qRt_A[tt]*dt
-    model.ESS_qSoE_A_def = Constraint(model.T, rule=ESS_qSoE_A_def_rule)
-    # Constraints for first hour
-    # Qt_i[1] = qt0_i*(1-static_i)+eta_ch_i*qBtch_i[1]*dt-(1/eta_dis_i)*qBtdis_i[1]*dt-Loss_i*qRt_i[1]*dt
-    def ESS_qSoE_1_A_def_rule(model):
-        return model.Qt_A[1] == (1 - static_TA) * Qt0_A *E_TA\
-            + eta_ch_TA * model.qBtch_A[1] * dt \
-            - (1 / eta_dis_TA) * model.qBtdis_A[1] * dt \
-            # - Loss_TA * model.qRt_A[1]*dt
-    model.ESS_qSoE_1_A_def = Constraint(rule=ESS_qSoE_1_A_def_rule)
+    
     def InitSoE_A_th_rule(model):
         return Qt0_A *E_TA == model.Qt_A[TimePeriods]
     model.InitSoE_th_A = Constraint(rule=InitSoE_A_th_rule)
@@ -595,3 +606,17 @@ def Run_Daily_Schedule_Optimization(config, day=0, manual_prices=None):
         result_dict[dict_key] = list(getattr(instance, dict_key).extract_values().values())
 
     return f"Day_{day}", result_dict
+def Result_Update (config, result_dict, day=0):
+    pBt_A= result_dict['pBt_A']
+    pBt_B= result_dict['pBt_B']
+    pBt_C= result_dict['pBt_C']
+    q2p= result_dict['q2p']
+    pBt_RC= result_dict['pBt_RC']
+    qBt_A= result_dict['qBt_A']
+    config ['Electrcial_Storage_Units'][0][list(config['Electrcial_Storage_Units'][0].keys())[0]]["pBt"]=  [-val*1000 for val in pBt_A]
+    # config ['Electrcial_Storage_Units'][1][list(config['Electrcial_Storage_Units'][1].keys())[0]]["pBt"]= [-val*1000 for val in pBt_B]
+    config ['Electrcial_Storage_Units'][2][list(config['Electrcial_Storage_Units'][2].keys())[0]]["pBt"]= [-val*1000 for val in pBt_C]
+    config ['Thermal_Storage_Units'][0][list(config['Thermal_Storage_Units'][0].keys())[0]]["qBt"]= [-val*1000 for val in qBt_A]
+    config ['Thermal_to_Electrical_Converters'][0][list(config['Thermal_to_Electrical_Converters'][0].keys())[0]]["q2p"]= [-val*1000 for val in q2p]
+    config ['Thermal_to_Electrical_Converters'][0][list(config['Thermal_to_Electrical_Converters'][0].keys())[0]]["pBt_RC"]= [-val*1000 for val in pBt_RC]
+    return config

@@ -25,13 +25,14 @@ import yaml
 import logging
 import pandas as pd
 from time import time
+import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import Run_Daily_Schedule_Optimization, initialize_config, default_config
+from utils import Run_Daily_Schedule_Optimization, initialize_config, default_config, Result_Update
 
 
 def run_daily_schedule(
-    config_filename="config_scenario_run_01_1.yaml",
+    config_filename=None,
     manual_prices=None,
     plot_results=False,
     store_results=False,
@@ -49,8 +50,8 @@ def run_daily_schedule(
 
     config = initialize_config(default_config, user_config)
 
-    logging.info(f"Running daily schedule optimization with {'prices from config...' if manual_prices is None else 'manually defined prices...'}")
-    Daily_results = Run_Daily_Schedule_Optimization(config=config, manual_prices=manual_prices)
+    logging.info(f"Running daily schedule optimization ...")
+    Daily_results = Run_Daily_Schedule_Optimization(config=config)
 
     logging.info(f"Result summary:")
     logging.info(f"   Optimization status: {Daily_results[1]['Solver_status']}")
@@ -60,17 +61,14 @@ def run_daily_schedule(
     result_df = pd.DataFrame({key: Daily_results[1][key] for key in plot_variables})
     # print(result_df)
 
-    if store_results:
-        filename = f"{int(time())}_DailyScheduleOpt_results.csv"
-        result_df.to_csv(os.path.join("Results", "DailyScheduleOptimization", filename), index=False)
-        logging.info(f"Saved results to {filename}")
+    # result_df.to_csv(f"./Results/DailyScheduleOptimization/{result_df}")
+    config_updated= Result_Update(config, Daily_results[1])
+    with open(os.path.join(f'{config_filename}'), 'w') as file:
+        yaml.dump(config_updated,file)
 
-    return Daily_results, result_df
-
-
-import sys
 
 if __name__ == "__main__":
-    config_file = sys.argv[1] if len(sys.argv) > 1 else "default.yaml"
+    config_file = sys.argv[1]
+    print (f'Optimisation runs for {config_file}')
     run_daily_schedule(config_filename=config_file)
         
