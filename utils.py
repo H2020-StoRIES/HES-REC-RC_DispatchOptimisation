@@ -94,6 +94,25 @@ default_config = {'Name': 'Minimal configuration for HESS optimization',
                                                     'Eta_RC': 0.38,
                                                     'Cost_RC': 0.04
                                                 }},
+                'Generation': {
+                    'PV': {
+                        'Cost_operational': 100,
+                        'Capital_cost_per_module': 0
+                    },
+                    'WT': {
+                        'Cost_operational': 100,
+                        'Capital_cost_per_module': 0
+                    },
+                    'CSP': {
+                        'Cost_operational': 100,
+                        'Capital_cost_per_module': 0
+                    },
+                    'TPS': {
+                        'Cost_operational': 100,
+                        'Capital_cost_per_module': 0
+                    }
+                },
+                
                 'General': {'pLoad': 100,
                             'qDemand': 100,
                             'pGrid_max': 100000,
@@ -136,6 +155,13 @@ def initialize_config(default_config, user_config):
                 for k2, v2 in Th_storage_dict.items():
                     for k3, v3 in v2.items():
                         updated_config["Thermal_Storage_Units"][unit_idx][unit_name][k3] = v3
+        elif config_key == "Generation":
+            for Gen_dict in config_value:
+                unit_name = list(Gen_dict.keys())[0]
+                if unit_name in updated_config["Generation"]:
+                    for k2, v2 in Gen_dict.items():
+                        for k3, v3 in v2.items():
+                            updated_config["Generation"][unit_name][k3] = v3
         else:
             updated_config[config_key] = config_value
 
@@ -282,7 +308,8 @@ def Run_Daily_Schedule_Optimization(config, day=0):
     model.et0_C = Var(domain=NonNegativeReals)  # Initial State of Energy (Charge)
     #RC
     model.pBt_RC = Var(model.T,domain=NonNegativeReals)  # RC output power
-
+    model.q2p = Var(model.T, domain=NonNegativeReals)  # Thermal power covrted to electrical power
+    
     # # Thermal ESS A Variables
     model.qBt_A = Var(model.T, domain=Reals)  # Basepoint (power)
     model.qBtch_A = Var(model.T, domain=NonNegativeReals)  # Basepoint charging
@@ -292,8 +319,7 @@ def Run_Daily_Schedule_Optimization(config, day=0):
     model.Qt_A = Var(model.T, domain=NonNegativeReals)  # State of Energy (Charge)
     # model.Qt0_A = Var(domain=NonNegativeReals)  # Initial State of Energy (Charge)
     #TODO: qt0 and et0: Can be constant 
-    # Rankine cycle
-    model.q2p = Var(model.T, domain=NonNegativeReals)  # Thermal power covrted to electrical power
+    
     
     # Energy imports/exports
     model.pGrid = Var(model.T, domain=Reals)  # Grid electricity exchange
@@ -316,14 +342,13 @@ def Run_Daily_Schedule_Optimization(config, day=0):
                 + Cost_ESS_C*(model.pBtch_C[tt]+model.pBtdis_C[tt])
                 + Cost_ESS_TA* (model.qBtch_A[tt] +model.qBtdis_A[tt])
                 + Cost_RC * model.pBt_RC[tt]
-                for tt in model.T
-            )
-        )+ (1 - w) * CO2Price * (
+                for tt in model.T))+ (1 - w) * CO2Price * (
     sum(CI_th * model.qGrid[tt] for tt in model.T) #TODO: Should be replaced with q import and p import
     + sum(CI_el * model.pGrid[tt] for tt in model.T)
     )
     model.obj = Objective(rule=obj_rule, sense=minimize)
 
+    
     print('EnPrice:', EnPrice,
           'HeatPrice:',HeatPrice,
           'Cost_ESS_A:',Cost_ESS_A,
@@ -344,14 +369,16 @@ def Run_Daily_Schedule_Optimization(config, day=0):
             # + model.pBt_B[tt] 
             + model.pBt_C[tt] +
             pLoad[tt-1] 
+            + model.pBt_RC[tt]
         )
+    print('net load:',[pl - pg for pl, pg in zip(pLoad, pGen)])
     model.Electricity_balance = Constraint(model.T, rule=Electricity_balance_rule)
     
     def Thermal_balance_rule(model, tt):
         return (
             qGen[tt-1] + model.qGrid[tt] ==
             model.qBt_A[tt] +
-            qDemand[tt-1] 
+            qDemand[tt-1] + model.q2p[tt]
         )
     model.Thermal_balance = Constraint(model.T, rule=Thermal_balance_rule)
     # ESS Basepoint Definition (Charging and Discharging) (pBt_i[tt] = pBtch_i[tt] - pBtdis_i[tt])
@@ -590,17 +617,66 @@ def Run_Daily_Schedule_Optimization(config, day=0):
     def Heat_Export_Limit_rule(model, tt):
         return -qGrid_max <= model.qGrid[tt]
     model.Heat_Export_Limit = Constraint(model.T, rule=Heat_Export_Limit_rule)
+    # cost_obj= w*(
+    #         # TODO: Check convention: pGrid= pImport - pExport 
+    #         sum(EnPrice[tt - 1] * model.pGrid[tt]  for tt in model.T)
+    #         # qGrid= qImport - qExport
+    #         + sum(HeatPrice * model.qGrid[tt] for tt in model.T)
+    #         + sum(
+    #             Cost_ESS_A*(model.pBtch_A[tt]+model.pBtdis_A[tt]) 
+    #             # + Cost_ESS_B*(model.pBtch_B[tt]+model.pBtdis_B[tt])
+    #             + Cost_ESS_C*(model.pBtch_C[tt]+model.pBtdis_C[tt])
+    #             + Cost_ESS_TA* (model.qBtch_A[tt] +model.qBtdis_A[tt])
+    #             + Cost_RC * model.pBt_RC[tt]
+    #             for tt in model.T)
+    #     )+ (1 - w) * CO2Price * (
+    # sum(CI_th * model.qGrid[tt] for tt in model.T) #TODO: Should be replaced with q import and p import
+    # + sum(CI_el * model.pGrid[tt] for tt in model.T)
+    # )
+    # # Add cost_obj as an output
+    # model.cost_obj = Expression(expr=cost_obj)
+    # # Cost of operation (charging/discharging) of the storage units
+    # cost_operation = sum(
+    #             Cost_ESS_A * (model.pBtch_A[tt] + model.pBtdis_A[tt]) 
+    #             # + Cost_ESS_B * (model.pBtch_B[tt] + model.pBtdis_B[tt])
+    #             + Cost_ESS_C * (model.pBtch_C[tt] + model.pBtdis_C[tt])
+    #             + Cost_ESS_TA * (model.qBtch_A[tt] + model.qBtdis_A[tt])
+    #             + Cost_RC * model.pBt_RC[tt]
+    #             for tt in model.T)
+
+    # # Add cost_operation as an output
+    # model.cost_operation = Expression(expr=cost_operation)
 #     #TODO: check regulation limits for Rankine Cycle
 #     ### Define solver, create model instance and solve ###
     opt = pyo.SolverFactory("gurobi")
     instance = model.create_instance()
     results = opt.solve(instance)
     opt.options["OutputFlag"] = 1
+    
+    
     ### Extract results ###
     result_dict = {"Solver_status": str(results.solver.status),
                    "Cost_upper_bound": results.problem.lower_bound,
-                   "Cost_lower_bound": results.problem.upper_bound,
+                   "Cost_lower_bound": results.problem.upper_bound
                    }
+    # Extract variable values from the model instance
+    pBtch_A_values = [instance.pBtch_A[tt].value for tt in range(1, TimePeriods + 1)]
+    pBtdis_A_values = [instance.pBtdis_A[tt].value for tt in range(1, TimePeriods + 1)]
+    pBtch_C_values = [instance.pBtch_C[tt].value for tt in range(1, TimePeriods + 1)]
+    pBtdis_C_values = [instance.pBtdis_C[tt].value for tt in range(1, TimePeriods + 1)]
+    qBtch_A_values = [instance.qBtch_A[tt].value for tt in range(1, TimePeriods + 1)]
+    qBtdis_A_values = [instance.qBtdis_A[tt].value for tt in range(1, TimePeriods + 1)]
+    pBt_RC_values = [instance.pBt_RC[tt].value for tt in range(1, TimePeriods + 1)]
+
+    # Calculate operation cost based on the extracted values
+    Cost_operation_ESS = sum(
+        Cost_ESS_A * (pBtch_A_values[tt - 1] + pBtdis_A_values[tt - 1]) +
+        Cost_ESS_C * (pBtch_C_values[tt - 1] + pBtdis_C_values[tt - 1]) +
+        Cost_ESS_TA * (qBtch_A_values[tt - 1] + qBtdis_A_values[tt - 1]) +
+        Cost_RC * pBt_RC_values[tt - 1]
+        for tt in range(1, TimePeriods + 1)
+    )
+    result_dict["Cost_operation_ESS"] = Cost_operation_ESS
 
     for dict_key in model.component_map(ctype=pyo.Var).keys():
         result_dict[dict_key] = list(getattr(instance, dict_key).extract_values().values())
@@ -618,5 +694,6 @@ def Result_Update (config, result_dict, day=0):
     config ['Electrcial_Storage_Units'][2][list(config['Electrcial_Storage_Units'][2].keys())[0]]["pBt"]= [-val*1000 for val in pBt_C]
     config ['Thermal_Storage_Units'][0][list(config['Thermal_Storage_Units'][0].keys())[0]]["qBt"]= [-val*1000 for val in qBt_A]
     config ['Thermal_to_Electrical_Converters'][0][list(config['Thermal_to_Electrical_Converters'][0].keys())[0]]["q2p"]= [-val*1000 for val in q2p]
-    config ['Thermal_to_Electrical_Converters'][0][list(config['Thermal_to_Electrical_Converters'][0].keys())[0]]["pBt_RC"]= [-val*1000 for val in pBt_RC]
+    config['General']['cost_obj'] = result_dict['Cost_upper_bound']
+    config['General']['Cost_operation_ESS'] = result_dict['Cost_operation_ESS']
     return config

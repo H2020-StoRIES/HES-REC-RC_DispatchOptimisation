@@ -62,13 +62,17 @@ def run_daily_schedule(
     # print(result_df)
 
     # result_df.to_csv(f"./Results/DailyScheduleOptimization/{result_df}")
+    total_cost = round(Daily_results[1]['Cost_upper_bound'], 2)
+    yearly_cost = round(Daily_results[1]['Cost_upper_bound'] * 365, 2)
     config_updated= Result_Update(config, Daily_results[1])
+    # config_updated['Total_cost']= round(Daily_results[1]['Cost_upper_bound'],2)
+    # config_updated['Yearly_cost']= round(Daily_results[1]['Cost_upper_bound']*365,2)
+    # config_updated['Solver_status']= Daily_results[1]['Solver_status']
     with open(os.path.join(f'{config_filename}'), 'w') as file:
         yaml.dump(config_updated,file)
-
 
 if __name__ == "__main__":
     config_file = sys.argv[1]
     print (f'Optimisation runs for {config_file}')
     run_daily_schedule(config_filename=config_file)
-        
+    
