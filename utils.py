@@ -323,27 +323,47 @@ def Run_Daily_Schedule_Optimization(config, day=0):
     # Energy imports/exports
     model.pGrid = Var(model.T, domain=Reals)  # Grid electricity exchange
     model.qGrid = Var(model.T, domain=Reals)  # Grid heat exchange
+
+    # Define import/export variables for CO2 calculation
+    model.pGrid_import = Var(model.T, domain=NonNegativeReals)   # Electricity import
+    model.pGrid_export = Var(model.T, domain=NonNegativeReals)   # Electricity export
+    model.qGrid_import = Var(model.T, domain=NonNegativeReals)   # Heat import
+    model.qGrid_export = Var(model.T, domain=NonNegativeReals)   # Heat export
+
+    # Constraints to link pGrid/qGrid with import/export variables
+    def pGrid_import_export_rule(model, tt):
+        return model.pGrid[tt] == model.pGrid_import[tt] - model.pGrid_export[tt]
+    model.pGrid_import_export = Constraint(model.T, rule=pGrid_import_export_rule)
+
+    def qGrid_import_export_rule(model, tt):
+        return model.qGrid[tt] == model.qGrid_import[tt] - model.qGrid_export[tt]
+    model.qGrid_import_export = Constraint(model.T, rule=qGrid_import_export_rule)
     
     # Basepoint power for each storage unit
     # model.pBt = Var(model.ESS, model.T, domain=Reals)
 
     #             )
     def obj_rule(model):
-        return w*(
-            # convention: pGrid= pImport - pExport 
-            sum(EnPrice[tt - 1] * model.pGrid[tt]  for tt in model.T)
-            # qGrid= qImport - qExport
+        # Objective function: weighted sum of cost and CO2 emissions
+        return w * (
+            # convention: pGrid = pImport - pExport 
+            sum(EnPrice[tt - 1] * model.pGrid[tt] for tt in model.T)
+            # qGrid = qImport - qExport
             + sum(HeatPrice * model.qGrid[tt] for tt in model.T)
             + sum(
-                Cost_ESS_A*(model.pBtch_A[tt]+model.pBtdis_A[tt]) 
-                + Cost_ESS_B*(model.pBtch_B[tt]+model.pBtdis_B[tt])
-                + Cost_ESS_C*(model.pBtch_C[tt]+model.pBtdis_C[tt])
-                + Cost_ESS_TA* (model.qBtch_A[tt] +model.qBtdis_A[tt])
-                + Cost_RC * model.pBt_RC[tt]
-                for tt in model.T))+ (1 - w) * CO2Price * (
-    sum(CI_th * model.qGrid[tt] for tt in model.T) 
-    + sum(CI_el * model.pGrid[tt] for tt in model.T)
-    )
+            Cost_ESS_A * (model.pBtch_A[tt] + model.pBtdis_A[tt])
+            + Cost_ESS_B * (model.pBtch_B[tt] + model.pBtdis_B[tt])
+            + Cost_ESS_C * (model.pBtch_C[tt] + model.pBtdis_C[tt])
+            + Cost_ESS_TA * (model.qBtch_A[tt] + model.qBtdis_A[tt])
+            + Cost_RC * model.pBt_RC[tt]
+            for tt in model.T
+            )
+        ) + (1 - w) * CO2Price * (
+            sum(CI_th * model.qGrid_export[tt] for tt in model.T)
+            + sum(CI_el * model.pGrid_import[tt] for tt in model.T)
+            + sum(CI_el * model.pGrid_export[tt] for tt in model.T)
+            + sum(CI_th * model.qGrid_import[tt] for tt in model.T)
+        )
     model.obj = Objective(rule=obj_rule, sense=minimize)
 
     
@@ -378,6 +398,13 @@ def Run_Daily_Schedule_Optimization(config, day=0):
             qDemand[tt-1] + model.q2p[tt]
         )
     model.Thermal_balance = Constraint(model.T, rule=Thermal_balance_rule)
+    def qGrid_import_export_rule(model, tt):
+        return model.qGrid[tt] == model.qGrid_import[tt] - model.qGrid_export[tt]
+    model.qGrid_import_export = Constraint(model.T, rule=qGrid_import_export_rule)
+    def pGrid_import_export_rule(model, tt):
+        return model.pGrid[tt] == model.pGrid_import[tt] - model.pGrid_export[tt]
+    model.pGrid_import_export = Constraint(model.T, rule=pGrid_import_export_rule)
+
     # ESS Basepoint Definition (Charging and Discharging) (pBt_i[tt] = pBtch_i[tt] - pBtdis_i[tt])
     def ESS_pBt_A_def_rule(model, tt):
         return model.pBt_A[tt] == model.pBtch_A[tt] - model.pBtdis_A[tt]
