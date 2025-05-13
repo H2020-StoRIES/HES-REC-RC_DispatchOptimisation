@@ -359,10 +359,10 @@ def Run_Daily_Schedule_Optimization(config, day=0):
             for tt in model.T
             )
         ) + (1 - w) * CO2Price * (
-            sum(CI_th * model.qGrid_export[tt] for tt in model.T)
-            + sum(CI_el * model.pGrid_import[tt] for tt in model.T)
-            + sum(CI_el * model.pGrid_export[tt] for tt in model.T)
-            + sum(CI_th * model.qGrid_import[tt] for tt in model.T)
+            # sum(CI_th * model.qGrid_export[tt] for tt in model.T)+
+            sum(CI_el * model.pGrid_import[tt] for tt in model.T)+
+            # sum(CI_el * model.pGrid_export[tt] for tt in model.T)+
+            sum(CI_th * model.qGrid_import[tt] for tt in model.T)
         )
     model.obj = Objective(rule=obj_rule, sense=minimize)
 
@@ -623,7 +623,7 @@ def Run_Daily_Schedule_Optimization(config, day=0):
     model.SoE_A_max_th_limit = Constraint(model.T, rule=SoE_A_max_th_limit_rule)
     def Rankine_Cycle_q2p_rule(model, tt):
         if qGen[tt-1]>=qDemand[tt-1]:
-            return model.q2p[tt] == qGen[tt-1]-qDemand[tt-1]
+            return model.q2p[tt] == qGen[tt-1]-qDemand[tt-1] - model.qBt_A[tt]
         else:
             return model.q2p[tt] == 0
     model.Rankine_Cycle_q2p = Constraint(model.T, rule=Rankine_Cycle_q2p_rule)
