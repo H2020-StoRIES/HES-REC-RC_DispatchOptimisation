@@ -648,7 +648,7 @@ def Run_Daily_Schedule_Optimization(config, day=0):
         return -qGrid_max <= model.qGrid[tt]
     model.Heat_Export_Limit = Constraint(model.T, rule=Heat_Export_Limit_rule)
 
-    opt = pyo.SolverFactory("gurobi")
+    opt = pyo.SolverFactory("cbc") #this solver originally was "gurobi" but because of the license issue, we changed it to "cbc"
     instance = model.create_instance()
     results = opt.solve(instance)
     opt.options["OutputFlag"] = 1
