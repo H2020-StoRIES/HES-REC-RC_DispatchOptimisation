@@ -60,7 +60,15 @@ This module implements the power dispatch optimization for hybrid energy systems
 - Python 3.12.0 (recommended)
 - Pyomo
 - pandas, numpy, yaml, openpyxl
-- Optional: solvers such as GLPK, CBC, or Gurobi (for better performance)
+- CBC Solver should be installed
+ Download from: [https://github.com/coin-or/Cbc/releases](https://github.com/coin-or/Cbc/releases)  
+ Recommended file: `Cbc-releases.2.10.12-w64-msvc17-md.zip` (for modern Windows systems)  
+ Extract it (e.g., to `C:\cbc`)  
+ Add the `C:\cbc\bin` directory to your system `Path` environment variable  
+ Open a new terminal and verify installation with:
+```bash
+cbc --version
+  ```
 
 Install dependencies using:
 ```bash
