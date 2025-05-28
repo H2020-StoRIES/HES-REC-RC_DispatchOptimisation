@@ -2,6 +2,7 @@
 # Dispatch Optimization Module
 
 This module implements the power dispatch optimization for hybrid energy systems using the Pyomo library. It takes system configuration and scenario input files (in YAML format), performs cost- and emissions-based optimization, and outputs power dispatch schedules for storage units and renewable sources.
+The optimisation formulation can be found in `Documents` directory.
 
 ---
 
@@ -36,12 +37,11 @@ This module implements the power dispatch optimization for hybrid energy systems
 ---
 
 ## 📦 Inputs
-
+Following inputs are given to the optimisation through `config_scenario_runX_Y.yaml`:
 - Time series data for demand and generation
 - Storage parameters (capacity, power limits, efficiency)
 - Import/export price profiles
-- Objective function weights and constraints (from `Config_Opt.xlsx` or YAML)
-
+- Objective function weights and constraints 
 ---
 
 ## 📤 Outputs
